@@ -1,0 +1,27 @@
+{
+  "ROM0": {
+    "used": 16228,
+    "free": 156,
+    "banks": 1
+  },
+  "ROMX": {
+    "used": 559197,
+    "free": 161699,
+    "banks": 44
+  },
+  "SRAM": {
+    "used": 25122,
+    "free": 7646,
+    "banks": 4
+  },
+  "WRAM0": {
+    "used": 8162,
+    "free": 30,
+    "banks": 1
+  },
+  "HRAM": {
+    "used": 127,
+    "free": 0,
+    "banks": 1
+  }
+}
