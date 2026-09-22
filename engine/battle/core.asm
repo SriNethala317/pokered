@@ -4666,14 +4666,20 @@ ApplyAttackToEnemyPokemon:
 	ld b, a
 	srl a
 	add b
+	jr nc, .noCarry
+	ld a, $ff ; fixed: cap at 255 instead of overflowing
+.noCarry
 	ld b, a ; b = level * 1.5
-; loop until a random number in the range [1, b) is found
+; loop until a random number in the range [1, b] is found
+; fixed: the range used to exclude b, which hung the game at level 1
 .loop
 	call BattleRandom
 	and a
 	jr z, .loop
 	cp b
+	jr z, .gotDamage
 	jr nc, .loop
+.gotDamage
 	ld b, a
 .storeDamage ; store damage value at b
 	ld hl, wDamage
@@ -4785,14 +4791,20 @@ ApplyAttackToPlayerPokemon:
 	ld b, a
 	srl a
 	add b
+	jr nc, .noCarry
+	ld a, $ff ; fixed: cap at 255 instead of overflowing
+.noCarry
 	ld b, a ; b = attacker's level * 1.5
-; loop until a random number in the range [0, b) is found
-; this differs from the range when the player attacks, which is [1, b)
-; it's possible for the enemy to do 0 damage with Psywave, but the player always does at least 1 damage
+; loop until a random number in the range [1, b] is found
+; fixed: the range used to be [0, b), so the enemy could do 0 damage with Psywave
 .loop
 	call BattleRandom
+	and a
+	jr z, .loop
 	cp b
+	jr z, .gotDamage
 	jr nc, .loop
+.gotDamage
 	ld b, a
 .storeDamage
 	ld hl, wDamage
