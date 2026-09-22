@@ -37,8 +37,12 @@ SubstituteEffect_:
 	sbc 0
 	pop bc
 	jr c, .notEnoughHP ; underflow means user would be left with negative health
-                       ; bug: since it only branches on carry, it will possibly leave user with 0 HP
-; user has 0 or more HP
+	ld e, a ; save the resulting HP high byte
+	or d
+	jr z, .notEnoughHP ; fixed: the user used to be left with 0 HP when its current HP
+	                   ; was exactly a quarter of its max HP
+; user has more than 0 HP
+	ld a, e
 	ld [hli], a ; save resulting HP after subtraction into current HP
 	ld [hl], d
 	ld h, b

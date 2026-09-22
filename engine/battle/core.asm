@@ -4892,11 +4892,18 @@ AttackSubstitute:
 ; subtract damage from HP of substitute
 	ld a, [de]
 	sub [hl]
+	jr c, .substituteBroke ; fixed: the substitute used to be left with the underflowed HP
+	jr z, .substituteBroke ; the substitute also breaks if it's left with exactly 0 HP
 	ld [de], a
-	ret nc
+	ret
 .substituteBroke
-; If the target's Substitute breaks, wDamage isn't updated with the amount of HP
-; the Substitute had before being attacked.
+; fixed: wDamage is set to the HP the Substitute had before being attacked,
+; so that the excess damage doesn't carry over
+	ld a, [de]
+	ld [hld], a
+	xor a
+	ld [hl], a
+	ld [de], a ; the substitute has no HP left
 	ld h, b
 	ld l, c
 	res HAS_SUBSTITUTE_UP, [hl] ; unset the substitute bit
