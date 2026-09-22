@@ -277,8 +277,20 @@ OverworldLoopLessDelay::
 	ld hl, wMiscFlags
 	res BIT_TURNING, [hl]
 	ld a, [wWalkBikeSurfState]
+	and a ; walking?
+	jr z, .checkForRunning
 	dec a ; riding a bike?
 	jr nz, .normalPlayerSpriteAdvancement
+	jr .doSpeedup
+.checkForRunning
+; hold B while walking to move at bike speed
+	ld a, [wStatusFlags5]
+	bit BIT_SCRIPTED_MOVEMENT_STATE, a
+	jr nz, .normalPlayerSpriteAdvancement ; don't speed up simulated button presses
+	ldh a, [hJoyHeld]
+	bit B_PAD_B, a
+	jr z, .normalPlayerSpriteAdvancement
+.doSpeedup
 	ld a, [wMovementFlags]
 	bit BIT_LEDGE_OR_FISHING, a
 	jr nz, .normalPlayerSpriteAdvancement
