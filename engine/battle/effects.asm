@@ -453,6 +453,11 @@ UpdateStat:
 	ld [hli], a
 	ldh a, [hProduct + 3]
 	ld [hl], a
+	dec hl
+; the recalculated stat lost its badge boost, so reapply it to this stat only
+	ldh a, [hWhoseTurn]
+	and a
+	call z, ApplyBadgeBoostToStat
 	pop hl
 UpdateStatDone:
 	ld b, c
@@ -485,7 +490,7 @@ UpdateStatDone:
 	call PlayCurrentMoveAnimation
 	ld a, [de]
 	cp MINIMIZE
-	jr nz, .applyBadgeBoostsAndStatusPenalties
+	jr nz, .applyStatusPenalties
 	pop bc
 	ld a, $1
 	ld [bc], a
@@ -493,11 +498,9 @@ UpdateStatDone:
 	ld b, BANK(ReshowSubstituteAnim)
 	pop af
 	call nz, Bankswitch
-.applyBadgeBoostsAndStatusPenalties
-	ldh a, [hWhoseTurn]
-	and a
-	call z, ApplyBadgeStatBoosts ; whenever the player uses a stat-up move, badge boosts get reapplied again to every stat,
-	                             ; even to those not affected by the stat-up move (will be boosted further)
+.applyStatusPenalties
+; fixed: the badge boosts used to be reapplied to every stat here, even to those not
+; affected by the stat-up move, so they got boosted again on every stat change
 	ld hl, MonsStatsRoseText
 	call PrintText
 
@@ -671,6 +674,11 @@ UpdateLoweredStat:
 	ld [hli], a
 	ldh a, [hProduct + 3]
 	ld [hl], a
+	dec hl
+; the recalculated stat lost its badge boost, so reapply it to this stat only
+	ldh a, [hWhoseTurn]
+	and a
+	call nz, ApplyBadgeBoostToStat
 	pop de
 	pop hl
 UpdateLoweredStatDone:
@@ -681,13 +689,11 @@ UpdateLoweredStatDone:
 	pop de
 	ld a, [de]
 	cp ATTACK_DOWN_SIDE_EFFECT ; for all side effects, move animation has already played, skip it
-	jr nc, .ApplyBadgeBoostsAndStatusPenalties
+	jr nc, .ApplyStatusPenalties
 	call PlayCurrentMoveAnimation2
-.ApplyBadgeBoostsAndStatusPenalties
-	ldh a, [hWhoseTurn]
-	and a
-	call nz, ApplyBadgeStatBoosts ; whenever the opponent uses a stat-down move, badge boosts get reapplied again to every stat,
-	                              ; even to those not affected by the stat-down move (will be boosted further)
+.ApplyStatusPenalties
+; fixed: the badge boosts used to be reapplied to every stat here, even to those not
+; affected by the stat-down move, so they got boosted again on every stat change
 	ld hl, MonsStatsFellText
 	call PrintText
 

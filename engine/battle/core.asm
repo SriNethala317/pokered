@@ -6462,6 +6462,30 @@ CalculateModifiedStat:
 	pop bc
 	ret
 
+; applies the badge boost to the single stat at hl
+; c = stat index (0 = attack, 1 = defense, 2 = speed, 3 = special)
+; this is used after a stat modifier changes, since recalculating a stat drops its
+; badge boost; applying all of the badge boosts again would boost the other three
+; stats a second time
+ApplyBadgeBoostToStat:
+	ld a, [wLinkState]
+	cp LINK_STATE_BATTLING
+	ret z ; return if link battle
+	push bc
+	ld a, [wObtainedBadges]
+	ld b, a
+	inc c
+.findBadgeBit
+	srl b ; the badge bit for the stat ends up in carry
+	dec c
+	jr z, .gotBadgeBit
+	srl b
+	jr .findBadgeBit
+.gotBadgeBit
+	pop bc
+	ret nc ; return if the badge hasn't been obtained
+	jp ApplyBadgeStatBoosts.applyBoostToStat
+
 ApplyBadgeStatBoosts:
 	ld a, [wLinkState]
 	cp LINK_STATE_BATTLING
