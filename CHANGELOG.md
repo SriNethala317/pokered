@@ -5,7 +5,25 @@ build has sha1 `ea9bcae617fdf159b045185467ae58b2e4a48b9a`.
 
 ## Unreleased
 
-Integration build sha1 `a1ff46fde88d57e6ed6ecc7db42d89f0d4dfe9b5`.
+Integration build sha1 `0fa85fc865313514b859e2015ed70b33f8459def`.
+
+### Battle mechanics
+
+- **Each move now has its own damage category.** In vanilla a move's type alone
+  decides whether it uses Attack or Special: every Fire, Water, Grass, Electric,
+  Psychic, Ice and Dragon move is special and everything else is physical. That
+  is why Hitmonchan's elemental punches ignore its enormous Attack and why
+  Kingler gets nothing out of Crabhammer. Moves are now looked up individually
+  against the categories the series settled on from Generation 4 onward.
+
+  Sixteen moves change hands. Fire Punch, Ice Punch, Thunder Punch, Vine Whip,
+  Razor Leaf, Waterfall, Clamp and Crabhammer become physical; Razor Wind, Gust,
+  Acid, Hyper Beam, Smog, Sludge, Swift and Tri Attack become special.
+
+  Only the choice of attacking and defending stat changes. A move's type still
+  decides same-type attack bonus and type effectiveness, so nothing about the
+  type chart moves. Moves that deal fixed damage or are one-hit knockouts are
+  left out, because they never consult these stats in the first place.
 
 ### Battle engine fixes
 
@@ -68,9 +86,16 @@ New checks under `test/`, all run against each build:
 - `battle.py` - enters the debug build's test battle and plays fourteen turns,
   confirming damage resolves, a Pokemon can faint, and the battle ends without
   crashing.
-- `navigate.py`, `rominspect.py` - shared helpers for scripted input and for
-  reading the ROM through the linker's own symbol names.
+- `datacheck.py` - reads the built ROM back and checks the tables we edited: all
+  190 evolution and learnset entries parse, and the damage category table
+  decodes to exactly the moves intended.
+- `splitcheck.py` - stages a matchup in the debug battle and measures damage
+  with the attacker's Attack and Special swapped, proving that a move's damage
+  follows the stat its category selects rather than its type.
+- `navigate.py`, `rominspect.py`, `debugbattle.py` - shared helpers for scripted
+  input, for reading the ROM through the linker's own symbol names, and for
+  dropping straight into the debug build's test battle.
 
-Current headroom: ROM0 138 bytes free (-18), ROMX 161,639 free (-60), WRAM0 30
+Current headroom: ROM0 138 bytes free (-18), ROMX 161,578 free (-121), WRAM0 30
 free (unchanged), HRAM 0 free (unchanged), SRAM 7,646 free (unchanged). No
 change in this release consumes any RAM.

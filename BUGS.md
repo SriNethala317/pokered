@@ -54,12 +54,19 @@ Nothing yet.
 
 These are not bugs, but they are things we currently cannot prove:
 
-- **Battles run, but no specific changed matchup has been observed.**
-  `test/battle.py` now plays a real fourteen-turn battle in the debug build:
-  damage resolves, a Pokemon faints, and the battle ends and restarts cleanly.
-  That rules out a crash in the battle loop. It does not show Lick connecting
-  with an Alakazam, a Focus Energy critical hit, or a Substitute absorbing a
-  hit. Each changed mechanic still needs a matchup built for it.
+- **Battles run, but most changed matchups have still not been observed.**
+  `test/battle.py` plays a real fourteen-turn battle in the debug build: damage
+  resolves, a Pokemon faints, and the battle ends and restarts cleanly. That
+  rules out a crash in the battle loop. `test/splitcheck.py` goes further for
+  one change only, the physical/special split, by staging a specific matchup and
+  measuring damage. Lick connecting with an Alakazam, a Focus Energy critical
+  hit and a Substitute absorbing a hit are all still unobserved.
+- **The damage category test cannot observe critical hits.** On a critical hit
+  the engine deliberately discards the in-battle stats and recalculates from the
+  party Pokemon's stored stats, so the stat values `test/splitcheck.py` writes
+  are ignored and the turn proves nothing. The test detects and discards these
+  turns. A move's category on a critical hit is therefore untested, although it
+  runs through exactly the same lookup.
 - **Data changes are verified by reading the ROM, not by playing.** All 190
   evolution and learnset entries parse correctly out of the built ROM, and the
   Lick and type chart edits read back with the expected values. Nobody has

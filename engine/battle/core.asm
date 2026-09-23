@@ -4037,9 +4037,8 @@ GetDamageVarsForPlayerAttack:
 	and a
 	ld d, a ; d = move power
 	ret z ; return if move power is zero
-	ld a, [hl] ; a = [wPlayerMoveType]
-	cp SPECIAL ; types >= SPECIAL are all special
-	jr nc, .specialAttack
+	call IsPlayerMoveSpecial
+	jr c, .specialAttack
 ; physical attack
 	ld hl, wEnemyMonDefense
 	ld a, [hli]
@@ -4150,9 +4149,8 @@ GetDamageVarsForEnemyAttack:
 	ld d, a ; d = move power
 	and a
 	ret z ; return if move power is zero
-	ld a, [hl] ; a = [wEnemyMoveType]
-	cp SPECIAL ; types >= SPECIAL are all special
-	jr nc, .specialAttack
+	call IsEnemyMoveSpecial
+	jr c, .specialAttack
 ; physical attack
 	ld hl, wBattleMonDefense
 	ld a, [hli]
@@ -4252,6 +4250,64 @@ GetDamageVarsForEnemyAttack:
 	and a
 	and a
 	ret
+
+; Returns carry set if the move now being used is a special attack.
+;
+; Vanilla decides this from the move's type alone: every Fire, Water, Grass,
+; Electric, Psychic, Ice and Dragon move runs off Special and every other move
+; runs off Attack. That is why Hitmonchan's elemental punches ignore its huge
+; Attack and why Kingler gets nothing out of Crabhammer. We look the move
+; itself up in SpecialMoves instead, so each move uses the stat that suits it.
+;
+; Only the attacking and defending stats change. The move's type still decides
+; STAB and type effectiveness, so AdjustDamageForMoveType is unaffected.
+IsPlayerMoveSpecial:
+	ld a, [wPlayerMoveNum]
+	jr MoveUsesSpecialStat
+
+IsEnemyMoveSpecial:
+	ld a, [wEnemyMoveNum]
+
+MoveUsesSpecialStat:
+; Preserves every register the damage routines still need; only a and the
+; flags are clobbered.
+	push hl
+	push de
+	push bc
+	dec a ; move ids start at 1
+	ld e, a
+	and %111
+	ld b, a ; bit within the byte
+	ld a, e
+	srl a
+	srl a
+	srl a ; byte within the table
+	ld e, a
+	ld d, 0
+	ld hl, SpecialMoves
+	add hl, de
+	ld a, [hl]
+; rotating b + 1 times leaves bit b in the carry flag
+	inc b
+.shiftLoop
+	rrca
+	dec b
+	jr nz, .shiftLoop
+	pop bc
+	pop de
+	pop hl
+	ret
+
+; Every move whose damage should come off Special rather than Attack, following
+; the categories the series settled on in Generation 4. Moves that deal fixed
+; damage or are one-hit knockouts are left out: they never consult these stats.
+SpecialMoves:
+	special_moves GUST, ACID, EMBER, FLAMETHROWER, WATER_GUN, HYDRO_PUMP, \
+	              SURF, ICE_BEAM, BLIZZARD, PSYBEAM, BUBBLEBEAM, AURORA_BEAM, \
+	              HYPER_BEAM, ABSORB, MEGA_DRAIN, SOLARBEAM, PETAL_DANCE, \
+	              FIRE_SPIN, THUNDERSHOCK, THUNDERBOLT, THUNDER, CONFUSION, \
+	              PSYCHIC_M, SMOG, SLUDGE, FIRE_BLAST, SWIFT, DREAM_EATER, \
+	              BUBBLE, TRI_ATTACK, RAZOR_WIND
 
 ; get stat c of enemy mon
 ; c: stat to get (STAT_* constant)

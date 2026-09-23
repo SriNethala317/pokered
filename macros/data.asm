@@ -37,6 +37,26 @@ MACRO? tmhm
 	ENDR
 ENDM
 
+; used in engine/battle/core.asm
+MACRO? special_moves
+	; initialize bytes to 0
+	FOR n, (NUM_ATTACKS + 7) / 8
+		DEF _sp{d:n} = 0
+	ENDR
+	; set bits of bytes
+	REPT _NARG
+		ASSERT FATAL, STRFIND("\1", " ") == -1, "Invalid move: \1"
+		DEF n = ((\1) - 1) / 8
+		DEF i = ((\1) - 1) % 8
+		DEF _sp{d:n} |= 1 << i
+		SHIFT
+	ENDR
+	; output bytes
+	FOR n, (NUM_ATTACKS + 7) / 8
+		db _sp{d:n}
+	ENDR
+ENDM
+
 
 ; Constant data (db, dw, dl) macros
 
