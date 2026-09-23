@@ -134,6 +134,11 @@ New checks under `test/`, all run against each build:
   still acts while trapped, then knocks a target out with Hyper Beam and
   confirms the recharge is still applied. Both changes are deletions of a
   branch, which is the kind of change that fails silently.
+- `statuscheck.py` - opens the status screen from the debug build's test battle,
+  saves a screenshot, and decodes the stats box straight out of `wTileMap` so the
+  labels and numbers can be asserted rather than eyeballed. Until now nothing in
+  the project could look at a screen, which is why the status screen bug had gone
+  unfixed.
 - `navigate.py`, `rominspect.py`, `debugbattle.py` - shared helpers for scripted
   input, for reading the ROM through the linker's own symbol names, and for
   dropping straight into the debug build's test battle.
