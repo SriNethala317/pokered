@@ -4107,6 +4107,8 @@ GetDamageVarsForPlayerAttack:
 	ld a, [hli]
 	ld l, [hl]
 	ld h, a ; hl = player's offensive stat
+	call ApplyPlayerSpecialSplit
+	ld a, h
 	or b ; is either high byte nonzero?
 	jr z, .next ; if not, we don't need to scale
 ; bc /= 4 (scale enemy's defensive stat)
@@ -4219,6 +4221,8 @@ GetDamageVarsForEnemyAttack:
 	ld a, [hli]
 	ld l, [hl]
 	ld h, a ; hl = enemy's offensive stat
+	call ApplyEnemySpecialSplit
+	ld a, h
 	or b ; is either high byte nonzero?
 	jr z, .next ; if not, we don't need to scale
 ; bc /= 4 (scale player's defensive stat)
@@ -4308,6 +4312,103 @@ SpecialMoves:
 	              FIRE_SPIN, THUNDERSHOCK, THUNDERBOLT, THUNDER, CONFUSION, \
 	              PSYCHIC_M, SMOG, SLUDGE, FIRE_BLAST, SWIFT, DREAM_EATER, \
 	              BUBBLE, TRI_ATTACK, RAZOR_WIND
+
+; Split the one stored Special stat into a special attack and a special
+; defence at the moment damage is worked out.
+;
+; Generation 1 stores a single Special that a Pokemon both attacks and defends
+; with, which is why Alakazam is at once the best special attacker in the game
+; and an excellent special wall. Storing a real seventh stat needs about 68
+; bytes of WRAM0 and there are 30, so instead each species carries two factors
+; in sixteenths and the stored Special is scaled by whichever role it is
+; playing. Species whose Generation 2 values match are left alone.
+;
+; Called with hl holding the attacker's offensive stat and bc the defender's
+; defensive stat, both already picked out by the caller. Physical moves return
+; untouched.
+ApplyPlayerSpecialSplit:
+	call IsPlayerMoveSpecial
+	ret nc
+	ld a, [wBattleMonSpecies]
+	ld e, SPECIAL_ATTACK_FACTOR
+	call ScaleSpecialStat
+	ld a, [wEnemyMonSpecies]
+	ld e, SPECIAL_DEFENSE_FACTOR
+	jr ScaleSpecialDefenseBC
+
+ApplyEnemySpecialSplit:
+	call IsEnemyMoveSpecial
+	ret nc
+	ld a, [wEnemyMonSpecies]
+	ld e, SPECIAL_ATTACK_FACTOR
+	call ScaleSpecialStat
+	ld a, [wBattleMonSpecies]
+	ld e, SPECIAL_DEFENSE_FACTOR
+
+ScaleSpecialDefenseBC:
+; The defensive stat lives in bc, so borrow hl for the arithmetic.
+	push hl
+	ld h, b
+	ld l, c
+	call ScaleSpecialStat
+	ld b, h
+	ld c, l
+	pop hl
+	ret
+
+ScaleSpecialStat:
+; hl = hl * SpecialSplitFactors[a][e] / 16, capped at MAX_STAT_VALUE.
+	push bc
+	push de
+	push hl ; the stat itself, while hl is used to walk the table
+	dec a ; species ids start at 1
+	ld l, a
+	ld h, 0
+	add hl, hl ; two factors per species
+	ld d, 0
+	add hl, de ; pick the one for this role
+	ld de, SpecialSplitFactors
+	add hl, de
+	ld a, [hl]
+	pop hl
+	ldh [hMultiplier], a
+	xor a
+	ldh [hMultiplicand + 0], a
+	ld a, h
+	ldh [hMultiplicand + 1], a
+	ld a, l
+	ldh [hMultiplicand + 2], a
+	call Multiply
+	ld a, 16
+	ldh [hDivisor], a
+	ld b, 4
+	call Divide
+	ldh a, [hQuotient + 2]
+	ld h, a
+	ldh a, [hQuotient + 3]
+	ld l, a
+	pop de
+	pop bc
+; The rest of the damage code assumes a stat fits in ten bits, so a factor
+; above sixteen must not be allowed to push one past the normal ceiling.
+	ld a, h
+	cp HIGH(MAX_STAT_VALUE)
+	jr c, .notTooBig
+	jr nz, .tooBig
+	ld a, l
+	cp LOW(MAX_STAT_VALUE) + 1
+	jr c, .notTooBig
+.tooBig
+	ld hl, MAX_STAT_VALUE
+.notTooBig
+; A stat of zero would divide by zero further down the damage formula.
+	ld a, h
+	or l
+	ret nz
+	inc l
+	ret
+
+INCLUDE "data/pokemon/special_split.asm"
 
 ; get stat c of enemy mon
 ; c: stat to get (STAT_* constant)

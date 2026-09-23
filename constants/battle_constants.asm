@@ -74,6 +74,11 @@ DEF SLP_MASK EQU %111 ; 0-7 turns
 
 DEF MAX_STAT_VALUE EQU 999
 
+; which half of a species' entry in SpecialSplitFactors to read
+; (see data/pokemon/special_split.asm)
+DEF SPECIAL_ATTACK_FACTOR EQU 0
+DEF SPECIAL_DEFENSE_FACTOR EQU 1
+
 ; trainer dvs
 DEF ATKDEFDV_TRAINER EQU $98
 DEF SPDSPCDV_TRAINER EQU $88

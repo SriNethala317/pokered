@@ -5,7 +5,7 @@ build has sha1 `ea9bcae617fdf159b045185467ae58b2e4a48b9a`.
 
 ## Unreleased
 
-Integration build sha1 `0fa85fc865313514b859e2015ed70b33f8459def`.
+Integration build sha1 `a7147bd01d8800ca08ed01fa38fd3c76ceb2be4a`.
 
 ### Battle mechanics
 
@@ -24,6 +24,22 @@ Integration build sha1 `0fa85fc865313514b859e2015ed70b33f8459def`.
   decides same-type attack bonus and type effectiveness, so nothing about the
   type chart moves. Moves that deal fixed damage or are one-hit knockouts are
   left out, because they never consult these stats in the first place.
+
+- **Special attack and special defence are now separate in practice.** Vanilla
+  stores one Special stat that a Pokemon both attacks and defends with, which is
+  why Alakazam is at once the best special attacker in the game and an excellent
+  special wall, and why Chansey hits as hard as it takes hits.
+
+  Each species now carries two factors taken from its genuine Generation 2
+  Special Attack and Special Defence, and the stored Special is scaled by
+  whichever role it is playing at the moment damage is worked out. The pair is
+  normalised to average out, so a species whose two Generation 2 values match is
+  left exactly as it was; 110 of the 190 species are reshaped.
+
+  This is a scaling layer rather than a seventh stat: stat experience, DVs and
+  the badge boost still feed one stored Special, and the status screen still
+  shows that single number. Both limitations are recorded in `BUGS.md`. A real
+  stored stat needs about 68 bytes of working RAM and there are 30.
 
 ### Battle engine fixes
 
@@ -87,15 +103,17 @@ New checks under `test/`, all run against each build:
   confirming damage resolves, a Pokemon can faint, and the battle ends without
   crashing.
 - `datacheck.py` - reads the built ROM back and checks the tables we edited: all
-  190 evolution and learnset entries parse, and the damage category table
-  decodes to exactly the moves intended.
-- `splitcheck.py` - stages a matchup in the debug battle and measures damage
-  with the attacker's Attack and Special swapped, proving that a move's damage
-  follows the stat its category selects rather than its type.
+  190 evolution and learnset entries parse, the damage category table decodes to
+  exactly the moves intended, and no special split factor is zero or leaves a
+  species stronger overall.
+- `splitcheck.py` - stages matchups in the debug battle and measures damage with
+  one thing changed at a time, proving that a move's damage follows the stat its
+  category selects rather than its type, and that each side's special split
+  factor is really applied.
 - `navigate.py`, `rominspect.py`, `debugbattle.py` - shared helpers for scripted
   input, for reading the ROM through the linker's own symbol names, and for
   dropping straight into the debug build's test battle.
 
-Current headroom: ROM0 138 bytes free (-18), ROMX 161,578 free (-121), WRAM0 30
+Current headroom: ROM0 138 bytes free (-18), ROMX 161,076 free (-623), WRAM0 30
 free (unchanged), HRAM 0 free (unchanged), SRAM 7,646 free (unchanged). No
 change in this release consumes any RAM.

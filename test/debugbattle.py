@@ -30,6 +30,8 @@ WANTED = (
     "wPlayerMoveNum",
     "wPlayerMovePower",
     "wBattleMonSpeed",
+    "wBattleMonSpecies",
+    "wEnemyMonSpecies",
     "wDamage",
     "hWhoseTurn",
     "wCriticalHitOrOHKO",

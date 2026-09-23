@@ -57,6 +57,18 @@ MACRO? special_moves
 	ENDR
 ENDM
 
+; used in data/pokemon/special_split.asm
+; \1 = Generation 2 Special Attack, \2 = Generation 2 Special Defence
+;
+; Emits the two as factors in sixteenths of the species' stored Special stat,
+; scaled so the pair averages 16. A species whose Generation 2 values match
+; therefore comes out as 16 and 16, which leaves it exactly as it is today.
+; Both halves round to nearest so the pair keeps its shape at small values.
+MACRO? special_split
+	db (32 * (\1) + ((\1) + (\2)) / 2) / ((\1) + (\2))
+	db (32 * (\2) + ((\1) + (\2)) / 2) / ((\1) + (\2))
+ENDM
+
 
 ; Constant data (db, dw, dl) macros
 

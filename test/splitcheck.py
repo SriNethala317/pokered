@@ -1,16 +1,22 @@
-"""Prove the per-move physical/special split actually changes damage.
+"""Prove the two halves of the battle rework actually change damage.
 
-The read-back check in datacheck.py only shows that the SpecialMoves bit table
-holds the bits we meant to set. It says nothing about whether the battle code
-reads them. This does.
+The read-back checks in datacheck.py only show that the tables hold the values
+we meant to write. They say nothing about whether the battle code reads them.
+This does, for both tables, from inside a live battle.
 
-The method avoids having to know a move's damage formula. Inside a live battle
-we give the player Fire Punch -- a move vanilla treats as special and we now
-treat as physical -- and run it twice with the attacker's Attack and Special
-swapped. Same move, same level, same defender, same type chart multiplier, so
-the only thing that differs is which stat the engine read. If damage is high
-when Attack is high, the move is physical; if it tracks Special instead, our
-table is being ignored.
+The method avoids having to know the damage formula. Everything except the one
+thing under test is held fixed, and damage is compared between two readings.
+
+For the per-move damage category, the player is given Fire Punch -- a move
+vanilla treats as special and we now treat as physical -- and takes turns with
+the attacker's Attack and Special swapped. Same move, same level, same
+defender, same type chart multiplier, so the only thing that differs is which
+stat the engine read.
+
+For the special split, both sides keep Rhydon's stats and types and only the
+species index that the factor table is read with changes. Damage against a
+species with a high special defence factor must be lower than against one with
+a low factor, and the same for the attacking side.
 
 Usage:
     python test/splitcheck.py pokeblue_debug.gbc pokeblue_debug.sym
@@ -22,6 +28,11 @@ from debugbattle import NotReached, enter, tap, word, write_word
 
 FIRE_PUNCH = 7
 SURF = 57
+
+# Species indexes, and the special split factors they carry in sixteenths.
+RHYDON = 0x01    # 16 and 16, the same either way
+CHANSEY = 0x28   # 8 attacking, 24 defending
+ALAKAZAM = 0x95  # 20 attacking, 12 defending
 
 HIGH = 250
 LOW = 10
@@ -37,6 +48,18 @@ ENEMY_HP = 999
 # and message boxes, so this is generous on purpose; the loop below stops early
 # once the enemy's HP moves.
 TURN_FRAMES = 900
+
+
+# Which species each side is treated as, for the special split factor lookup.
+# Only the species index changes, so types, stats and everything else stay as
+# they were and the type chart multiplier is the same whatever is selected.
+# Rewritten every turn along with everything else, because a restart would put
+# the real Rhydon back.
+SPECIES = {"attacker": RHYDON, "defender": RHYDON}
+
+# A fixed special defence for the opponent, so the only thing moving between
+# readings is the factor the species lookup supplies.
+ENEMY_SPECIAL = 100
 
 
 def setup(p, at, move_id, attack, special, enemy_max):
@@ -60,6 +83,9 @@ def setup(p, at, move_id, attack, special, enemy_max):
     p.memory[at["wBattleMonPP"]] = 40
     write_word(p, at["wBattleMonAttack"], attack)
     write_word(p, at["wBattleMonSpecial"], special)
+    write_word(p, at["wEnemyMonSpecial"], ENEMY_SPECIAL)
+    p.memory[at["wBattleMonSpecies"]] = SPECIES["attacker"]
+    p.memory[at["wEnemyMonSpecies"]] = SPECIES["defender"]
     # Outrunning the opponent means the first damage of the turn is ours.
     write_word(p, at["wBattleMonSpeed"], 250)
     write_word(p, at["wDamage"], 0)
@@ -185,6 +211,38 @@ def main():
     # the table lookup, and the Fire Punch result would prove nothing.
     compare(SURF, "SURF (unchanged control, still special)", "Special", False)
 
+    # The special split. Both sides keep Rhydon's stats and types throughout;
+    # only the species index the factor table is read with changes, so any
+    # difference in damage can only have come from the factors.
+    def with_species(attacker, defender):
+        SPECIES["attacker"] = attacker
+        SPECIES["defender"] = defender
+        return measure(p, at, SURF, LOW, 200, enemy_max)
+
+    print("special defence factor (defender's share of one Special stat)")
+    vs_alakazam = report("defender Alakazam (12/16)", with_species(RHYDON, ALAKAZAM))
+    vs_chansey = report("defender Chansey (24/16)", with_species(RHYDON, CHANSEY))
+    if vs_alakazam is None or vs_chansey is None:
+        failures.append("special defence factor: could not get a clean reading")
+    elif vs_alakazam <= vs_chansey * 1.4:
+        failures.append(
+            "the defender's special defence factor is not being applied: "
+            f"{vs_alakazam:.1f} against the frail defender, "
+            f"{vs_chansey:.1f} against the sturdy one"
+        )
+
+    print("special attack factor (attacker's share of one Special stat)")
+    as_alakazam = report("attacker Alakazam (20/16)", with_species(ALAKAZAM, RHYDON))
+    as_chansey = report("attacker Chansey (8/16)", with_species(CHANSEY, RHYDON))
+    if as_alakazam is None or as_chansey is None:
+        failures.append("special attack factor: could not get a clean reading")
+    elif as_alakazam <= as_chansey * 1.4:
+        failures.append(
+            "the attacker's special attack factor is not being applied: "
+            f"{as_alakazam:.1f} from the strong attacker, "
+            f"{as_chansey:.1f} from the weak one"
+        )
+
     p.stop(save=False)
 
     print()
@@ -192,7 +250,7 @@ def main():
         for f in failures:
             print(f"FAIL: {f}")
         return 1
-    print("PASS: damage follows the stat the move's category selects")
+    print("PASS: damage follows each move's category and each species' factors")
     return 0
 
 

@@ -86,6 +86,42 @@ def special_move_ids(rom, sym):
     return ids
 
 
+def special_split_factors(rom, sym):
+    """Read the per-species special attack and defence factors."""
+    bank, addr = sym["SpecialSplitFactors"]
+    base = rom_offset(bank, addr)
+    return [
+        (rom[base + i * 2], rom[base + i * 2 + 1])
+        for i in range(NUM_POKEMON_INDEXES)
+    ]
+
+
+def check_special_split(factors):
+    """The factors are sixteenths of the stored Special and must average 16.
+
+    A zero would wipe out a stat entirely and divide by zero further down the
+    damage formula, and a pair that does not average 16 would quietly make a
+    species stronger or weaker overall rather than only reshaping it.
+    """
+    problems = []
+    for index, (sat, sdf) in enumerate(factors, start=1):
+        if sat < 1 or sdf < 1:
+            problems.append(f"index {index}: factor of zero ({sat}, {sdf})")
+        if abs(sat + sdf - 32) > 2:
+            problems.append(f"index {index}: factors {sat} and {sdf} do not average 16")
+    # Three spot checks worked out by hand from the Generation 2 stats.
+    expected = {
+        1: (16, 16),    # Rhydon, 45 and 45, so unchanged
+        40: (8, 24),    # Chansey, 35 and 105, the special wall
+        149: (20, 12),  # Alakazam, 135 and 85, the glass cannon
+    }
+    for index, want in expected.items():
+        got = factors[index - 1]
+        if got != want:
+            problems.append(f"index {index}: factors are {got}, expected {want}")
+    return problems
+
+
 def main():
     rom_path = sys.argv[1] if len(sys.argv) > 1 else "pokered.gbc"
     sym_path = sys.argv[2] if len(sys.argv) > 2 else "pokered.sym"
@@ -115,6 +151,17 @@ def main():
         failures.append("SURF should still be special")
     if 89 in special:  # EARTHQUAKE
         failures.append("EARTHQUAKE should still be physical")
+
+    factors = special_split_factors(rom, sym)
+    problems = check_special_split(factors)
+    unchanged = sum(1 for pair in factors if pair == (16, 16))
+    print(
+        f"special split   : {NUM_POKEMON_INDEXES} species, "
+        f"{NUM_POKEMON_INDEXES - unchanged} reshaped, {len(problems)} problems"
+    )
+    for p in problems[:10]:
+        print(f"  {p}")
+    failures += problems
 
     # Balance edits that other checks depend on.
     bank, addr = sym["Moves"]
