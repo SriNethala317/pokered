@@ -126,6 +126,18 @@ def main():
         if not p.memory[at["wIsInBattle"]]:
             break
 
+    # The loop above stops the moment wIsInBattle clears, which is partway
+    # through the fade out of the battle screen. A fade is blank, and a blank
+    # screen is exactly what the crash check looks for, so let the game settle
+    # on its next screen before judging it.
+    for _ in range(240):
+        p.button_press("a")
+        for _ in range(4):
+            p.tick()
+        p.button_release("a")
+        for _ in range(8):
+            p.tick()
+
     if prefix:
         p.screen.image.save(f"{prefix}-battle.png")
 

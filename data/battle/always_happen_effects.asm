@@ -10,4 +10,5 @@ AlwaysHappenSideEffects:
 	db RECOIL_EFFECT
 	db TWINEEDLE_EFFECT
 	db RAGE_EFFECT
+	db HYPER_BEAM_EFFECT ; so the recharge turn still applies after a knockout
 	db -1 ; end

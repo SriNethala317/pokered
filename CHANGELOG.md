@@ -5,7 +5,7 @@ build has sha1 `ea9bcae617fdf159b045185467ae58b2e4a48b9a`.
 
 ## Unreleased
 
-Integration build sha1 `a7147bd01d8800ca08ed01fa38fd3c76ceb2be4a`.
+Integration build sha1 `785a43df8330e43cadc2cf0d5308c7f1f6efff1a`.
 
 ### Battle mechanics
 
@@ -40,6 +40,26 @@ Integration build sha1 `a7147bd01d8800ca08ed01fa38fd3c76ceb2be4a`.
   the badge boost still feed one stored Special, and the status screen still
   shows that single number. Both limitations are recorded in `BUGS.md`. A real
   stored stat needs about 68 bytes of working RAM and there are 30.
+
+- **Wrap, Bind, Fire Spin and Clamp no longer take the target's turns away.**
+  In vanilla a trapping move removes the opponent's move menu entirely for the
+  whole two to five turn duration, and a second trapping move started on the
+  turn the first ends chains straight into another lockout. Against a faster
+  Pokemon this can end a battle without the other side ever acting.
+
+  The move now only does what its name suggests: it repeats and deals its
+  damage each turn, and the target chooses a move every turn as normal. The
+  duration, the damage and the user's own commitment to the move are unchanged.
+  This is the Generation 2 treatment of the same move, with one difference
+  recorded in `BUGS.md`: the target may also switch out, which Generation 2
+  does not allow.
+
+- **Hyper Beam always has to recharge.** In vanilla the recharge is applied by a
+  move effect that runs after the engine has already returned early for a
+  fainted target, so knocking a Pokemon out with Hyper Beam skips the recharge
+  turn completely. That single omission is what makes Hyper Beam the defining
+  move of Generation 1 competitive play. The recharge is now applied before the
+  check for a fainted target, so it costs a turn whatever the outcome.
 
 ### Battle engine fixes
 
@@ -110,10 +130,14 @@ New checks under `test/`, all run against each build:
   one thing changed at a time, proving that a move's damage follows the stat its
   category selects rather than its type, and that each side's special split
   factor is really applied.
+- `trapcheck.py` - stages a Wrap in the debug battle and confirms the opponent
+  still acts while trapped, then knocks a target out with Hyper Beam and
+  confirms the recharge is still applied. Both changes are deletions of a
+  branch, which is the kind of change that fails silently.
 - `navigate.py`, `rominspect.py`, `debugbattle.py` - shared helpers for scripted
   input, for reading the ROM through the linker's own symbol names, and for
   dropping straight into the debug build's test battle.
 
-Current headroom: ROM0 138 bytes free (-18), ROMX 161,076 free (-623), WRAM0 30
+Current headroom: ROM0 138 bytes free (-18), ROMX 161,133 free (-566), WRAM0 30
 free (unchanged), HRAM 0 free (unchanged), SRAM 7,646 free (unchanged). No
 change in this release consumes any RAM.

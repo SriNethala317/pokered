@@ -313,13 +313,8 @@ MainInBattleLoop:
 	ld a, [wPlayerBattleStatus1]
 	and (1 << STORING_ENERGY) | (1 << USING_TRAPPING_MOVE) ; check player is using Bide or using a multi-turn attack like wrap
 	jr nz, .selectEnemyMove ; if so, jump
-	ld a, [wEnemyBattleStatus1]
-	bit USING_TRAPPING_MOVE, a ; check if enemy is using a multi-turn attack like wrap
-	jr z, .selectPlayerMove ; if not, jump
-; enemy is using a multi-turn attack like wrap, so player is trapped and cannot execute a move
-	ld a, CANNOT_MOVE
-	ld [wPlayerSelectedMove], a
-	jr .selectEnemyMove
+; A trapping move used to skip the player's move menu entirely for its whole
+; duration. It now only deals damage, so the player still gets to choose.
 .selectPlayerMove
 	ld a, [wActionResultOrTookBattleTurn]
 	and a ; has the player already used the turn (e.g. by using an item, trying to run or switching pokemon)
@@ -2948,9 +2943,7 @@ SelectEnemyMove:
 	ld a, [wEnemyBattleStatus1]
 	and (1 << USING_TRAPPING_MOVE) | (1 << STORING_ENERGY) ; using a trapping move like wrap or bide
 	ret nz
-	ld a, [wPlayerBattleStatus1]
-	bit USING_TRAPPING_MOVE, a ; caught in player's trapping move (e.g. wrap)
-	jr z, .canSelectMove
+	jr .canSelectMove ; a trapped opponent can now still choose a move
 .unableToSelectMove
 	ld a, $ff
 	jr .done
@@ -3354,7 +3347,7 @@ CheckPlayerStatusConditions:
 
 .FrozenCheck
 	bit FRZ, [hl] ; frozen?
-	jr z, .HeldInPlaceCheck
+	jr z, .FlinchedCheck
 	ld hl, IsFrozenText
 	call PrintText
 	xor a
@@ -3362,14 +3355,8 @@ CheckPlayerStatusConditions:
 	ld hl, ExecutePlayerMoveDone ; player can't move this turn
 	jp .returnToHL
 
-.HeldInPlaceCheck
-	ld a, [wEnemyBattleStatus1]
-	bit USING_TRAPPING_MOVE, a ; is enemy using a multi-turn move like wrap?
-	jp z, .FlinchedCheck
-	ld hl, CantMoveText
-	call PrintText
-	ld hl, ExecutePlayerMoveDone ; player can't move this turn
-	jp .returnToHL
+; A trapping move no longer holds its target in place; it only deals damage
+; each turn. The check that skipped the player's whole turn is gone.
 
 .FlinchedCheck
 	ld hl, wPlayerBattleStatus1
@@ -5887,21 +5874,14 @@ CheckEnemyStatusConditions:
 	jp .enemyReturnToHL
 .checkIfFrozen
 	bit FRZ, [hl]
-	jr z, .checkIfTrapped
+	jr z, .checkIfFlinched
 	ld hl, IsFrozenText
 	call PrintText
 	xor a
 	ld [wEnemyUsedMove], a
 	ld hl, ExecuteEnemyMoveDone ; enemy can't move this turn
 	jp .enemyReturnToHL
-.checkIfTrapped
-	ld a, [wPlayerBattleStatus1]
-	bit USING_TRAPPING_MOVE, a ; is the player using a multi-turn attack like warp
-	jp z, .checkIfFlinched
-	ld hl, CantMoveText
-	call PrintText
-	ld hl, ExecuteEnemyMoveDone ; enemy can't move this turn
-	jp .enemyReturnToHL
+; The player's trapping move no longer holds the opponent in place either.
 .checkIfFlinched
 	ld hl, wEnemyBattleStatus1
 	bit FLINCHED, [hl] ; check if enemy mon flinched

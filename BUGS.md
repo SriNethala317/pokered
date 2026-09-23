@@ -61,6 +61,28 @@ seventh stat. In play it gives the intended result, and it costs no RAM, which
 a real stat cannot: a stored special defence needs roughly 68 bytes of WRAM0
 across the party, the box cache, `wBattleMon` and `wEnemyMon`, and 30 are free.
 
+### A trapped Pokemon can switch out
+
+**Severity:** balance
+**Found:** while removing the partial trapping lock
+**Status:** accepted for now
+
+Wrap, Bind, Fire Spin and Clamp no longer take the target's turn away. Because
+the target now gets its full move menu, it can also switch out, which
+Generation 2 does not allow: there the target acts freely but is held in
+battle.
+
+Keeping the switch blocked means separating "cannot move" from "cannot switch",
+which vanilla does not distinguish at all. The current behaviour is the more
+forgiving of the two and is a large improvement on vanilla either way, so it is
+accepted rather than half-fixed. Worth revisiting during the Pallet-to-Brock
+tuning pass, when it is clear whether trapping moves are now too weak.
+
+There is a second, smaller difference from Generation 2: the *user* of a
+trapping move is still locked into repeating it for the full duration. That is
+deliberate. It is what makes the move a real commitment rather than free chip
+damage now that the target is no longer helpless.
+
 ### Buffed Pokemon give unchanged base experience
 
 **Severity:** balance
@@ -88,7 +110,8 @@ These are not bugs, but they are things we currently cannot prove:
   resolves, a Pokemon faints, and the battle ends and restarts cleanly. That
   rules out a crash in the battle loop. `test/splitcheck.py` goes further for
   one change only, the physical/special split, by staging a specific matchup and
-  measuring damage. Lick connecting with an Alakazam, a Focus Energy critical
+  measuring damage, and `test/trapcheck.py` does the same for the trapping and
+  Hyper Beam changes. Lick connecting with an Alakazam, a Focus Energy critical
   hit and a Substitute absorbing a hit are all still unobserved.
 - **The damage category test cannot observe critical hits.** On a critical hit
   the engine deliberately discards the in-battle stats and recalculates from the
