@@ -192,6 +192,22 @@ Integration build sha1 `493aea78c62e631b76d3973f106f9ffcabf722aa`.
     - the unlock is at Brock;
     - the final battle theme plays while it lasts.
 
+### Open world: level scaling
+
+- **Gym leaders 2 to 7, their gyms and the rival follow your badges.** Each
+  leader keeps their place in the original order, and their whole team shifts
+  by the difference between the typical ace level at your badge count and at
+  theirs (`TrainerAceLevels`: 14, 21, 24, 29, 43, 43, 47, 50, 55). The team
+  keeps its shape; only the levels move.
+  - Sabrina fought with 2 badges is 19 levels lower (her Alakazam is 24).
+  - Misty fought with 6 is 26 higher (her Starmie is 47).
+  - Gym trainers follow their gym.
+  - The rival's SS Anne, Pokemon Tower and Silph Co. battles follow which one
+    each is.
+  - Brock, Giovanni and every ordinary trainer are as they were.
+  This is the groundwork for opening up gyms 2 to 7 in any order. The map
+  gates themselves are not changed yet.
+
 ### Play with friends in the browser (multiplayer, phases 0-3)
 
 - **A web player** (`web/`, built with `make web`) runs the game in a phone or
@@ -466,6 +482,11 @@ New checks under `test/`, all run against each build:
   name unwritten, which the ROM rightly refuses). `test/web/*.mjs` test the
   page's own code in node, including a full trade relayed through a third
   player.
+- `scalecheck.py` - real trainer battles at chosen badge counts, reading the
+  enemy team's levels: Sabrina at 2 and 5 badges, Misty at 6, the SS Anne rival
+  at 5, a trainer in Misty's gym at 6, and Brock and a Youngster unchanged.
+  Its first run caught `CountSetBits` overwriting the designed badge count
+  held in `c`, so nothing ever scaled.
 - `fieldcheck.py` - staged turns with action commands Off, reading the damage
   as it enters the field code and as it is dealt:
   - each state is made by its move in its place and not elsewhere;

@@ -50,10 +50,13 @@ ReadTrainer:
 	cp $FF ; is the trainer special?
 	jr z, .SpecialTrainer ; if so, check for special moves
 	ld [wCurEnemyLevel], a
+	push hl
+	callfar ScaleTrainerLevel ; open-world leaders follow your badges
+	pop hl
 .LoopTrainerData
 	ld a, [hli]
 	and a ; have we reached the end of the trainer data?
-	jr z, .FinishUp
+	jp z, .FinishUp
 	ld [wCurPartySpecies], a
 	ld a, ENEMY_PARTY_DATA
 	ld [wMonDataLocation], a
@@ -70,6 +73,9 @@ ReadTrainer:
 	and a ; have we reached the end of the trainer data?
 	jr z, .AddLoneMove
 	ld [wCurEnemyLevel], a
+	push hl
+	callfar ScaleTrainerLevel ; open-world leaders follow your badges
+	pop hl
 	ld a, [hli]
 	ld [wCurPartySpecies], a
 	ld a, ENEMY_PARTY_DATA
