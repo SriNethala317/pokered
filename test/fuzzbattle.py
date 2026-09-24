@@ -46,8 +46,13 @@ OUT_OF_BATTLE_FRAMES = 300
 EXTRA = (
     "wEnemyMonMoves", "wEnemyMonPP", "wObtainedBadges", "wTileMap",
     "wTileMapBackup", "wActionCommandCue", "wActionCommandStreak",
-    "wIsInBattle",
+    "wIsInBattle", "wResonanceMeter", "wResonanceTurns", "wTrainerPain",
+    "wResonanceFlags", "wPartyMon1Bond", "wEventFlags",
 )
+EVENT_RESONANCE_UNLOCKED = 0x6A
+RESONANCE_ACTIVE = 1 << 7
+TRAINER_MAX_HP = 24
+MAX_METER, MAX_TURNS = 12, 8  # ResonanceRamp's largest meter, and turns x 2
 
 
 def text(s):
@@ -135,6 +140,16 @@ class Fuzzer:
             hp, top = word(self.p, at[f"w{side}MonHP"]), word(self.p, at[f"w{side}MonMaxHP"])
             if hp > top:
                 self.fail(turn, f"{side} HP {hp} above max {top}")
+        meter, turns = m[at["wResonanceMeter"]], m[at["wResonanceTurns"]]
+        pain, flags = m[at["wTrainerPain"]], m[at["wResonanceFlags"]]
+        if meter > MAX_METER:
+            self.fail(turn, f"Resonance meter {meter} above {MAX_METER}")
+        if pain >= TRAINER_MAX_HP:
+            self.fail(turn, f"trainer pain {pain} not below {TRAINER_MAX_HP}")
+        if flags & RESONANCE_ACTIVE and not 0 < turns <= MAX_TURNS:
+            self.fail(turn, f"Resonance active with {turns} turns")
+        if not flags & RESONANCE_ACTIVE and turns:
+            self.fail(turn, f"Resonance over but {turns} turns left")
         speed = m[at["wOptions"]] & 0x0F
         if self.text_speed is not None and speed != self.text_speed:
             self.fail(turn, f"text speed bits changed to {speed:x}")
@@ -160,6 +175,14 @@ class Fuzzer:
         self.text_speed = options & 0x0F
         if rng.random() < 0.2:
             m[at["wActionCommandStreak"]] = rng.choice((2, 3, 254, 255))
+        # Resonance: unlocked most of the time, often with the Bond and a full meter
+        event = at["wEventFlags"] + EVENT_RESONANCE_UNLOCKED // 8
+        bit = 1 << (EVENT_RESONANCE_UNLOCKED % 8)
+        m[event] = (m[event] | bit) if rng.random() < 0.8 else (m[event] & ~bit)
+        if rng.random() < 0.3:
+            m[at["wPartyMon1Bond"]] = rng.choice((199, 200, 255))
+        if rng.random() < 0.2:
+            m[at["wResonanceMeter"]] = MAX_METER
 
     def run(self, turns):
         rng = self.rng
@@ -177,7 +200,7 @@ class Fuzzer:
                     turn += 1
                     stalled = 0
             if held is None and rng.random() < 0.25:
-                held = [rng.choice("aabbb") if rng.random() < 0.9 else rng.choice(("up", "down")),
+                held = [rng.choice("aabbb") if rng.random() < 0.9 else rng.choice(("up", "down", "select")),
                         rng.randrange(1, 10)]
                 self.p.button_press(held[0])
             elif held is not None:

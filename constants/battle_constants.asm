@@ -149,3 +149,12 @@ DEF EFFECTIVENESS_MASK EQU %01111111
 	const_def
 	const ACTION_FOE_FEINT ; 0 a false cue comes first
 	const ACTION_FOE_TIMED ; 1 the trainer times this attack too
+
+; wResonanceFlags, see engine/battle/resonance.asm
+DEF RESONANCE_REFUNDS_MASK EQU %111 ; turns the chain has given back
+DEF RESONANCE_STUNNED      EQU 6
+DEF RESONANCE_ACTIVE       EQU 7
+
+; the Resonance bar in the player's HUD: a cap and 3 segments of 8 pixels
+DEF RESONANCE_BAR_TILES  EQU 3
+DEF TRAINER_MAX_HP       EQU RESONANCE_BAR_TILES * 8

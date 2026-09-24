@@ -51,6 +51,9 @@ DEF ACTION_BUTTON_CHAR     EQU '<NULL>'
 	const ACTION_BADGE_DOUBLE  ; 6
 	const ACTION_BADGE_FOE_GREAT  ; 7
 	const ACTION_BADGE_FOE_BRACED ; 8
+	const ACTION_BADGE_BROKEN     ; 9 Resonance broke
+	const ACTION_BADGE_STUNNED    ; 10 the turn it cost
+	const ACTION_BADGE_RESONANCE  ; 11 Resonance started
 
 ; wActionCommandCue
 	const_def 1
@@ -184,6 +187,7 @@ ArmActionCommand:
 	add ACTION_RAPID_EXTRA
 	ld e, a
 .gotWindow
+	call ResonanceWindowBonus
 	ld a, d
 	ld [wActionCommandPerfect], a
 	ld a, e
@@ -450,6 +454,7 @@ ApplyActionCommand:
 	cp ACTION_COMMAND_BADGE
 	ret z
 	call ClearActionCue
+	call FillResonance
 	call CountActionStreak
 	ldh a, [hWhoseTurn]
 	and a
@@ -586,8 +591,18 @@ ApplyActionCommand:
 	ld a, [wActionCommandResult]
 	add ACTION_BADGE_BRACED - ACTION_RESULT_GOOD
 .showBadge
+	call ResonanceAttack
+	; fallthrough
+
+; Show badge a on the badge line for a second, in place of any badge up.
+ShowActionBadge:
 	and a
 	jr z, .done ; nothing to show
+	push af
+	ld a, [wActionCommandState]
+	cp ACTION_COMMAND_BADGE
+	call z, ClearActionBadge
+	pop af
 	ld [wActionCommandResult], a
 	call GetActionBadgeString
 	call PlaceActionString
@@ -972,6 +987,9 @@ ActionBadgeStrings:
 	dw .double
 	dw .foeGreat
 	dw .foeBraced
+	dw .broken
+	dw .stunned
+	dw .resonance
 
 .early   db "TOO SOON@"
 .great   db "GREAT!@"
@@ -981,3 +999,6 @@ ActionBadgeStrings:
 .double  db "PERFECT×2@"
 .foeGreat  db "FOE GREAT@"
 .foeBraced db "FOE BRACED@"
+.broken    db "BROKEN!@"
+.stunned   db "STUNNED@"
+.resonance db "RESONANCE!@"

@@ -536,7 +536,15 @@ NEXTU
 wEnemyNumHits:: db
 ENDU
 
-	ds 8
+; Resonance, see engine/battle/resonance.asm
+wResonanceMeter:: db
+; your turns of Resonance left
+wResonanceTurns:: db
+; how much of the trainer's HP bar is gone, 0 to TRAINER_MAX_HP
+wTrainerPain:: db
+wResonanceFlags:: db
+
+	ds 4
 wMiscBattleDataEnd::
 ENDU
 

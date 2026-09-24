@@ -144,3 +144,15 @@ _PewterGymGuidePostBattleText::
 	line "You're #MON"
 	cont "champ material!"
 	done
+
+_PewterGymResonanceText::
+	text "<PLAYER> feels in"
+	line "tune with a"
+	cont "#MON!"
+
+	para "When the bar by"
+	line "your #MON's HP"
+	cont "fills, press"
+	cont "SELECT in battle"
+	cont "to fight as one!"
+	done

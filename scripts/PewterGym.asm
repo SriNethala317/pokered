@@ -66,6 +66,12 @@ PewterGymScriptReceiveTM34:
 	ld hl, wBeatGymFlags
 	set BIT_BOULDERBADGE, [hl]
 
+	; the first badge unlocks Resonance, see engine/battle/resonance.asm
+	callfar UnlockResonance
+	ld a, TEXT_PEWTERGYM_RESONANCE
+	ldh [hTextID], a
+	call DisplayTextID
+
 	ld a, TOGGLE_GYM_GUY
 	ld [wToggleableObjectIndex], a
 	predef HideObject
@@ -88,6 +94,7 @@ PewterGym_TextPointers:
 	dw_const PewterGymBrockWaitTakeThisText, TEXT_PEWTERGYM_BROCK_WAIT_TAKE_THIS
 	dw_const PewterGymReceivedTM34Text,      TEXT_PEWTERGYM_RECEIVED_TM34
 	dw_const PewterGymTM34NoRoomText,        TEXT_PEWTERGYM_TM34_NO_ROOM
+	dw_const PewterGymResonanceText,         TEXT_PEWTERGYM_RESONANCE
 
 PewterGymTrainerHeaders:
 	def_trainers 2
@@ -222,4 +229,8 @@ PewterGymGuideFreeServiceText:
 
 PewterGymGuidePostBattleText:
 	text_far _PewterGymGuidePostBattleText
+	text_end
+
+PewterGymResonanceText:
+	text_far _PewterGymResonanceText
 	text_end

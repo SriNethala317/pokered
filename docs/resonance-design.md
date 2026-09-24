@@ -37,8 +37,9 @@ explains the SELECT button. No text in battle.
   Anything else adds nothing (no penalty: missing is its own punishment).
 - It is kept across the enemy trainer's Pokemon and across your switches, and
   resets at the end of the battle.
-- Drawn in four tiles on row 8 of the player's HUD, left of the level,
-  with the HP bar's own segment tiles (32 steps). It is hidden until Resonance
+- Drawn on row 8 of the player's HUD, left of the level, with the HP bar's
+  own tiles: a cap and three 8-pixel segments (24 steps). The cap turns into
+  ▷ when Resonance is ready and ▶ while it lasts. It is hidden until Resonance
   is unlocked.
 
 ## Resonance Mode
@@ -54,8 +55,8 @@ explains the SELECT button. No text in battle.
   as well as PERFECT.
 - **Wider windows:** the perfect and good windows are wider by the ramp's
   bonus.
-- **Shared pain:** a trainer HP bar replaces the meter tiles (32 steps, full at
-  the start of each battle). While resonating, your Pokemon takes 3/4 of the
+- **Shared pain:** a trainer HP bar replaces the meter tiles (24 steps, full at
+  the start of each battle, and refilled after a break). While resonating, your Pokemon takes 3/4 of the
   damage it is dealt. The trainer loses the fraction of their bar equal to the
   fraction of max HP the Pokemon lost, times the ramp's pain factor. At 0,
   Resonance breaks: the meter empties, a BROKEN! badge shows, and your next
@@ -78,7 +79,7 @@ explains the SELECT button. No text in battle.
 
 - No new text boxes in battle, ever. Activation, break and stun all use the
   badge line.
-- Activation flash: 8 frames, at most once per activation.
+- Activation: 8 frames in all, flash included (measured by the test).
 - The meter and trainer bar redraw inside existing HUD redraws, not in extra
   frames.
 - **Test (`test/resonancecheck.py`):**

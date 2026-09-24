@@ -290,6 +290,13 @@ MainInBattleLoop:
 	call SaveScreenTilesToBuffer1
 	xor a
 	ld [wFirstMonsNotOutYet], a
+	callfar ResonanceNewTurn
+	jr nc, .notStunned
+; a broken Resonance costs the player this turn
+	ld a, CANNOT_MOVE
+	ld [wPlayerSelectedMove], a
+	jr .selectEnemyMove
+.notStunned
 	ld a, [wPlayerBattleStatus2]
 	and (1 << NEEDS_TO_RECHARGE) | (1 << USING_RAGE) ; check if the player is using Rage or needs to recharge
 	jr nz, .selectEnemyMove
@@ -966,6 +973,7 @@ HandlePlayerMonFainted:
 	ld e, a
 	ld d, BOND_FAINT
 	callfar ChangeBond
+	callfar EndResonance
 	ld a, 1
 	ld [wInHandlePlayerMonFainted], a
 	call RemoveFaintedPlayerMon
@@ -1845,6 +1853,7 @@ DrawPlayerHUDAndHPBar:
 	ld [wCurPartySpecies], a
 	hlcoord 10, 9
 	predef DrawHP
+	callfar DrawResonanceHUD
 	ld a, $1
 	ldh [hAutoBGTransferEnabled], a
 	ld hl, wPlayerHPBarColor
@@ -2087,11 +2096,19 @@ DisplayBattleMenu::
 	inc hl
 	ld a, $1
 	ld [hli], a ; wMaxMenuItem
-	ld [hl], PAD_RIGHT | PAD_A ; wMenuWatchedKeys
+	ld [hl], PAD_RIGHT | PAD_A | PAD_SELECT ; wMenuWatchedKeys
 	call HandleMenuInput
+	bit B_PAD_SELECT, a
+	jr nz, .selectPressed
 	bit B_PAD_RIGHT, a
 	jr nz, .rightColumn
 	jr .AButtonPressed ; the A button was pressed
+; SELECT starts Resonance when it is ready. It takes no turn, so the menu stays.
+.selectPressed
+	ld a, [wCurrentMenuItem]
+	ld [wBattleAndStartSavedMenuItem], a
+	callfar TryResonance
+	jp .handleBattleMenuInput
 .rightColumn ; put cursor in right column of menu
 	ld a, [wBattleType]
 	cp BATTLE_TYPE_SAFARI
@@ -2120,11 +2137,19 @@ DisplayBattleMenu::
 	inc hl
 	ld a, $1
 	ld [hli], a ; wMaxMenuItem
-	ld a, PAD_LEFT | PAD_A
+	ld a, PAD_LEFT | PAD_A | PAD_SELECT
 	ld [hli], a ; wMenuWatchedKeys
 	call HandleMenuInput
+	bit B_PAD_SELECT, a
+	jr z, .notSelectRight
+	ld a, [wCurrentMenuItem]
+	add 2 ; the right column's ids start at 2
+	ld [wBattleAndStartSavedMenuItem], a
+	callfar TryResonance
+	jp .handleBattleMenuInput
+.notSelectRight
 	bit B_PAD_LEFT, a
-	jr nz, .leftColumn ; if left was pressed, jump
+	jp nz, .leftColumn ; if left was pressed, jump
 	ld a, [wCurrentMenuItem]
 	add $2 ; if we're in the right column, the actual id is +2
 	ld [wCurrentMenuItem], a
@@ -2416,6 +2441,7 @@ PartyMenuOrRockOrRun:
 ; fall through to SwitchPlayerMon
 
 SwitchPlayerMon:
+	callfar EndResonance
 	callfar RetreatMon
 	ld c, 50
 	call DelayFrames

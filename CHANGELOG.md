@@ -145,6 +145,52 @@ Integration build sha1 `493aea78c62e631b76d3973f106f9ffcabf722aa`.
   - It falls by 10 when the Pokemon faints.
   - Saves from before this change keep the old catch rate in that byte, so
     their Pokemon start with a Bond equal to their species' catch rate.
+  - A PERFECT or a COUNTER adds 1 to the Pokemon that landed it.
+
+- **Resonance: fight as one with a Pokemon you have bonded with.**
+  - **Unlock.** Brock's badge unlocks it and lifts the Pokemon you are closest
+    to up to a resonant Bond of 200, so it is the first to Resonate. One text box
+    in the badge scene explains the button; nothing is ever explained in battle.
+  - **The meter.** Landed action commands fill a Resonance meter: PERFECT or
+    COUNTER 2, GREAT or BRACED 1. It is drawn with the HP bar's own tiles in the
+    empty space left of your Pokemon's level, and its cap turns into ▷ when
+    Resonance is ready.
+  - **Starting it.** Press SELECT on the battle menu with the meter full and a
+    Pokemon with Bond 200 or more out. It takes no turn: the screen flashes
+    twice (8 frames in all), the music changes to the final battle theme, and a
+    RESONANCE! badge shows.
+  - **While it lasts** (a few of your turns, ▶ on the cap):
+    - your attacks do x1.5, on top of the action command bonus;
+    - STAB moves land their secondary effect on any GREAT or PERFECT;
+    - both timing windows are wider;
+    - each PERFECT attack buys a turn back, up to the length it started with.
+  - **Shared pain.** While it lasts the bar shows your HP as the trainer. Your
+    Pokemon takes only 3/4 of each hit, and you lose a share of your bar equal
+    to the share of max HP the Pokemon lost, scaled by the ramp. If your bar
+    runs out, Resonance breaks (BROKEN!), the meter empties and you lose your
+    next turn (STUNNED).
+  - **When it ends.** It ends when its turns run out, the Pokemon faints or you
+    switch out.
+  - **The ramp.** Everything runs from one table by badge count
+    (`ResonanceRamp`):
+
+    | Badges | Meter | Turns | Wider windows | Pain |
+    |---|---|---|---|---|
+    | 0 | 6 | 3 | +6 frames | x1/2 |
+    | 1-2 | 8 | 3 | +5 | x1/2 |
+    | 3-4 | 9 | 3 | +4 | x3/4 |
+    | 5-6 | 10 | 4 | +4 | x3/4 |
+    | 7-8 | 12 | 4 | +3 | x1 |
+
+  - **Battles do not get longer.** No text box is ever added in battle; every
+    message is a badge on the action command line. The only extra frames are
+    the 8 of the flash when you start it.
+  - **What it costs.** The battle state is 4 bytes taken from padding that was
+    already cleared with the battle data, so no RAM.
+  - **Provisional choices,** made while you were away and easy to change:
+    - the starter begins with 64 Bond;
+    - the unlock is at Brock;
+    - the final battle theme plays while it lasts.
 
 ### Battle mechanics
 
@@ -289,6 +335,21 @@ New checks under `test/`, all run against each build:
   `pokered_debug.gbc`. Blue's targets are still in the Makefile but are no
   longer built, patched or tested, and every battle check runs on the Red
   debug build. `make bps` writes `pokered.bps` only.
+- `resonancecheck.py` - staged turns in the debug battle, with three badges.
+  - Nothing fills or shows before the unlock.
+  - The meter fills by 2 and 1, and Bond by 1 on PERFECT and COUNTER only.
+  - SELECT is refused one point short and at Bond 199, and starts Resonance
+    otherwise.
+  - The cap shows ▷ and ▶.
+  - x1.5 your way and x3/4 theirs, and the trainer's loss matches the formula.
+  - The perfect window is 4 frames wider.
+  - A PERFECT buys a turn back, 3 at most, and it ends after its turns.
+  - A turn with Resonance prints exactly as many texts as one without, and
+    starting it takes 8 frames.
+  - The trainer's last HP breaks it: BROKEN!, the meter empties, and the
+    player's next move is CANNOT_MOVE.
+  `fuzzbattle.py` now also unlocks it, gives Bond and a full meter at random,
+  mashes SELECT, and checks the meter, pain and turns stay in range.
 - `bondcheck.py` - plays the debug build to check Bond: every Pokemon the debug
   new game adds starts at 0, the 16th step gives the lead 1 and other steps
   nothing, a fainted lead is passed over, a win gives 2 (once, even with Exp.
