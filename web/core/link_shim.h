@@ -51,6 +51,9 @@ enum {
 enum {
     SHIM_LINK_XFER = 1,  /* we clocked a byte out on the internal clock */
     SHIM_LINK_REPLY = 2, /* our answer to the peer's XFER */
+    SHIM_LINK_BLOCK = 3, /* one byte of a fast-path block */
+    SHIM_LINK_BLOCK_END = 4, /* end of a block; byte = length & 0xFF */
+    SHIM_LINK_NYBBLE = 5, /* our side of a fast-path nybble sync */
 };
 
 /* joypad bits, same order as the hardware nybbles */
@@ -110,6 +113,26 @@ SHIM_API int shim_link_stalled(shim_t *s);
  * were plugged. The link session guest uses this so that only the session host
  * ever drives the clock while the connection is being set up. addr 0 = off. */
 SHIM_API void shim_link_gate(shim_t *s, uint16_t addr, uint8_t value);
+/* Block fast path. When the CPU enters exchange_bytes_addr
+ * (Serial_ExchangeBytes) with the cable plugged and memory[status_addr]
+ * (hSerialConnectionStatus) showing a connection, the whole block goes out as
+ * one run of BLOCK records and the console waits for the peer's block, then
+ * finishes as an ideal cable would (block_start in link_shim.c). ignoring_addr
+ * is hSerialIgnoringInitialData. Both consoles must enable it; everything
+ * else stays byte-by-byte lockstep. exchange_bytes_addr 0 turns it off. */
+SHIM_API void shim_link_fast(shim_t *s, uint16_t exchange_bytes_addr, uint16_t status_addr, uint16_t ignoring_addr);
+/* Blocks sent over the fast path so far. */
+SHIM_API uint32_t shim_link_blocks(shim_t *s);
+/* Nybble sync fast path: when the CPU enters sync_addr
+ * (Serial_SyncAndExchangeNybble) with a connection and the 16-bit inactivity
+ * counter at counter_addr (wUnknownSerialCounter) at zero, send
+ * memory[send_addr] as one message, wait for the peer's, store its low nybble
+ * at recv_addr and result_addr and return, as the sync loop would after
+ * agreeing. With the counter running (the receptionist's timed sync) the
+ * original loop runs byte by byte. Both consoles must enable it. */
+SHIM_API void shim_link_fast_sync(shim_t *s, uint16_t sync_addr, uint16_t send_addr, uint16_t recv_addr,
+                                  uint16_t result_addr, uint16_t counter_addr);
+SHIM_API uint32_t shim_link_syncs(shim_t *s);
 /* Pops one outgoing message. Returns 1 and fills kind/byte, or 0 if none. */
 SHIM_API int shim_link_pop(shim_t *s, uint8_t *kind, uint8_t *byte);
 /* Same, packed as (kind << 8) | byte, or -1 if none (handier from JS). */

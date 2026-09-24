@@ -30,6 +30,7 @@ export class LinkHost {
     this.emu = emu;
     this.net = net;
     this.ram = manifest.ram;
+    this.manifest = manifest;
     this.ui = ui; // { state(text), incoming(invite) -> Promise<bool>, ended(reason, reset) }
     this.session = null;
     this.pending = null; // our outgoing invite
@@ -95,6 +96,9 @@ export class LinkHost {
     // the guest only drives the clock once it is connected as external
     if (role === "guest") this.emu.linkGate(this.ram.hSerialConnectionStatus, USING_EXTERNAL_CLOCK);
     else this.emu.linkGate(0, 0);
+    // whole blocks and syncs travel as single messages; everything else
+    // stays byte by byte (both sides run the same build and protocol)
+    this.emu.linkFast(this.manifest, true);
     this.emu.linkPlug(true);
     this.ui.started?.(this.session);
     this.ui.state(
@@ -147,6 +151,7 @@ export class LinkHost {
     const reset = this.midLink();
     this.emu.linkPlug(false);
     this.emu.linkGate(0, 0);
+    this.emu.linkFast(this.manifest, false);
     this.emu.linkPop(); // discard anything queued
     if (reset) this.emu.reset();
     this.ui.ended(reason, reset);

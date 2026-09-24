@@ -93,6 +93,18 @@ export class Emulator {
   linkPlug(on) {
     this.M._shim_link_plug(this.s, on ? 1 : 0);
   }
+  // Fast paths for the bulk exchanges and nybble syncs (see link_shim.h).
+  linkFast(manifest, on) {
+    const r = manifest.rom, m = manifest.ram;
+    if (!on) {
+      this.M._shim_link_fast(this.s, 0, 0, 0);
+      this.M._shim_link_fast_sync(this.s, 0, 0, 0, 0, 0);
+      return;
+    }
+    this.M._shim_link_fast(this.s, r.Serial_ExchangeBytes.addr, m.hSerialConnectionStatus, m.hSerialIgnoringInitialData);
+    this.M._shim_link_fast_sync(this.s, r.Serial_SyncAndExchangeNybble.addr, m.wSerialExchangeNybbleSendData,
+      m.wSerialExchangeNybbleReceiveData, m.wSerialSyncAndExchangeNybbleReceiveData, m.wUnknownSerialCounter);
+  }
   linkGate(addr, value) {
     this.M._shim_link_gate(this.s, addr, value);
   }

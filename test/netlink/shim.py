@@ -48,6 +48,10 @@ def _load():
         "shim_link_plugged": (I, [P]),
         "shim_link_stalled": (I, [P]),
         "shim_link_gate": (None, [P, U16, U8]),
+        "shim_link_fast": (None, [P, U16, U16, U16]),
+        "shim_link_blocks": (ctypes.c_uint32, [P]),
+        "shim_link_fast_sync": (None, [P, U16, U16, U16, U16, U16]),
+        "shim_link_syncs": (ctypes.c_uint32, [P]),
         "shim_link_pop_packed": (I, [P]),
         "shim_link_push": (I, [P, U8, U8]),
         "shim_link_bytes_sent": (ctypes.c_uint32, [P]),
@@ -125,6 +129,18 @@ class Console:
 
     def gate(self, addr, value):
         self.L.shim_link_gate(self.s, addr, value)
+
+    def fast(self, exchange_bytes, status, ignoring):
+        self.L.shim_link_fast(self.s, exchange_bytes, status, ignoring)
+
+    def blocks(self):
+        return self.L.shim_link_blocks(self.s)
+
+    def fast_sync(self, sync, send, recv, result, counter):
+        self.L.shim_link_fast_sync(self.s, sync, send, recv, result, counter)
+
+    def syncs(self):
+        return self.L.shim_link_syncs(self.s)
 
     def stalled(self):
         return bool(self.L.shim_link_stalled(self.s))

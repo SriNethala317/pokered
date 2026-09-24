@@ -22,7 +22,7 @@ ALL_CFLAGS := $(CFLAGS) -std=gnu11 $(DEFS) $(WARN) -I$(SAMEBOY) -I$(GEN)
 EXPORTS := shim_create shim_destroy shim_load_rom shim_reset shim_sram_size shim_sram_save \
 	shim_sram_load shim_sram_dirty shim_run_frame shim_frame_count shim_set_keys shim_framebuffer \
 	shim_set_sample_rate shim_audio_read shim_set_audio_enabled shim_read shim_write \
-	shim_read_block shim_rom_bank shim_link_plug shim_link_plugged shim_link_gate shim_link_stalled \
+	shim_read_block shim_rom_bank shim_link_plug shim_link_plugged shim_link_gate shim_link_fast shim_link_blocks shim_link_fast_sync shim_link_syncs shim_link_stalled \
 	shim_link_pop shim_link_pop_packed shim_link_push shim_link_bytes_sent \
 	shim_link_bytes_received shim_hook_add shim_hook_clear shim_hook_next shim_reg \
 	shim_set_reg malloc free
