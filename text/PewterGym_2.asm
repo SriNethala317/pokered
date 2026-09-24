@@ -155,4 +155,10 @@ _PewterGymResonanceText::
 	cont "fills, press"
 	cont "SELECT in battle"
 	cont "to fight as one!"
+
+	para "A close #MON"
+	line "can IMPROVISE:"
+	cont "press START on a"
+	cont "move to use it on"
+	cont "the battlefield!"
 	done

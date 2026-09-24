@@ -255,6 +255,15 @@ Integration build sha1 `493aea78c62e631b76d3973f106f9ffcabf722aa`.
     recoil.
   - DARK: Smokescreen or Night Shade in the tower. Anything may miss, but
     Ghost moves always hit.
+- **Improvise: press START on a move to use it on the battlefield.** The move
+  deals no damage but leaves the state its type goes with, anywhere:
+  - Water soaks the ground and Fire sets it alight;
+  - Rock, Normal, Fighting and Grass bring down cover;
+  - Electric charges the air;
+  - and so on (`docs/field-states-design.md`).
+  It needs Bond 100, can be used once every 3 turns, and a resonant Bond makes
+  the state last 2 turns longer. It prints no text: an IMPROV! badge shows.
+  Brock's badge scene explains the button.
 - **The next field-changing move replaces the state.** Boosts, miss chances
   and durations grow with badges (`FieldRamp`). There is no text, so battles
   are no longer, and link battles have no field.
@@ -447,7 +456,12 @@ New checks under `test/`, all run against each build:
   - the singe is 1/16;
   - DUG!, RUBL and ZAP! are used up, and not remade by the move that used them;
   - Ghost moves always hit in the dark;
-  - a state lasts 5 turns, adds no text, and never appears in a link battle.
+  - a state lasts 5 turns, adds no text, and never appears in a link battle;
+  - Improvise: refused at Bond 99; at Bond 100, START on Water Gun soaks a room
+    with no damage and one PP spent; a second Improvise inside the wait is
+    refused; Rock Throw gives cover, and lasts 2 turns longer with Bond 255.
+  The Improvise check caught the turn count being lost to the Bond lookup, so
+  a state lasted 0 turns (then 255).
   It found a crash on the first draft: see `bankcheck.py`.
 - `bankcheck.py` - reads every `.asm` file against the linker's symbols and
   fails on any plain `call`/`jp`/`jr` from one switchable ROM bank into

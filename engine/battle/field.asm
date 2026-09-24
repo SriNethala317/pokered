@@ -467,6 +467,7 @@ ClearField:
 FieldNewTurn::
 	call IsLinkBattle
 	ret nz
+	call ImproviseNewTurn
 	ld a, [wFieldState]
 	and a
 	ret z

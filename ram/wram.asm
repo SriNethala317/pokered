@@ -556,6 +556,8 @@ wFieldState:: db
 wFieldTurns:: db
 ; which side a one-shot state belongs to (Rubble: the side it shelters)
 wFieldOwner:: db
+; see engine/battle/improvise.asm
+wImprovise:: db
 wMiscBattleDataEnd::
 ENDU
 

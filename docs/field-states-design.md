@@ -68,5 +68,32 @@ cleared with the battle data, and they took WRAM0 from 30 bytes free to 26.
 - The countdown runs at the top of the battle loop, which is entered again
   after a Pokemon faints and is replaced, so a faint mid-turn costs the state an
   extra turn.
-- Still to build: the Improvise command, the anime-style techniques, and gym
-  arenas redesigned around the states.
+- Still to build: the anime-style techniques, and gym arenas redesigned around
+  the states.
+
+## Improvise
+
+- **How:** press START instead of A on a move in the move menu. **Provisional:**
+  the brief asks for an IMPROVISE option next to FIGHT, but the battle menu's
+  four slots are full and START was unused in the move menu.
+- **What it does:** the move is spent (PP included) and deals no damage.
+  Instead it leaves the Field State its type goes with, wherever the battle is:
+
+  | Types | State | Picture |
+  |---|---|---|
+  | Water | SOAK | |
+  | Ice | ICE! | |
+  | Fire | FIRE | |
+  | Electric, Dragon | ZAP! | |
+  | Ground | DUG! | |
+  | Normal, Fighting, Rock, Grass | RUBL | cover, or vines to swing clear on |
+  | Flying, Bug | DUST | |
+  | Poison, Ghost, Psychic | DARK | |
+
+- **Limits:** it needs Bond 100 with the Pokemon out, and there are 3 turns
+  between uses. A resonant Bond (200) makes the state last 2 turns longer.
+- **Where not:** link battles, the Safari Zone and the old man's tutorial.
+- **Feedback:** an IMPROV! badge shows and the label changes; no text. The
+  button is explained once, in Brock's badge scene.
+- **RAM:** 1 byte, `wImprovise`, leaving WRAM0 with 25 bytes free.
+

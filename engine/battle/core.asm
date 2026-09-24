@@ -2587,10 +2587,10 @@ MoveSelectionMenu:
 	ld a, [wLinkState]
 	cp LINK_STATE_BATTLING
 	jr z, .matchedkeyspicked
-	; Disable left, right, and START buttons in regular battles.
+	; Disable left and right in regular battles. START improvises the move.
 	ld a, [wStatusFlags7]
 	bit BIT_TEST_BATTLE, a
-	ld b, ~(PAD_LEFT | PAD_RIGHT | PAD_START)
+	ld b, ~(PAD_LEFT | PAD_RIGHT)
 	jr z, .matchedkeyspicked
 	ld b, PAD_CTRL_PAD | PAD_BUTTONS
 .matchedkeyspicked
@@ -2644,6 +2644,21 @@ SelectMenuItem:
 	jp nz, SelectMenuItem_CursorDown
 	bit B_PAD_SELECT, a
 	jp nz, SwapMovesInMenu
+	bit B_PAD_START, a
+	jr z, .notImprovise
+	ld b, a
+	ld a, [wMoveMenuType]
+	and a
+	ld a, b
+	jr nz, .notImprovise ; only when choosing a move to battle with
+	push af
+	callfar TryImprovise
+	jr c, .improvise
+	pop af
+	jr .select ; refused: the menu stays
+.improvise
+	pop af
+.notImprovise
 	bit B_PAD_B, a
 	push af
 	xor a
@@ -3125,6 +3140,8 @@ ExecutePlayerMove:
 	jp z, ExecutePlayerMoveDone
 
 CheckIfPlayerNeedsToChargeUp:
+	callfar ImproviseMove ; a move used on the field skips the rest of the turn
+	jp c, ExecutePlayerMoveDone
 	ld a, [wPlayerMoveEffect]
 	cp CHARGE_EFFECT
 	jp z, JumpMoveEffect

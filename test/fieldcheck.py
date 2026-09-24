@@ -230,6 +230,58 @@ def main():
     turn("POUND", state="DUST")
     check(seen["texts"] == plain or seen["missed"].get(0), f"a turn in DUST prints {seen['texts']} texts, a plain one {plain}")
 
+    print("Improvise:")
+    from debugbattle import tap
+
+    def improvise(move, bond):
+        """At the battle menu: FIGHT, then START on the first move."""
+        w("wPartyMon1Bond", bond)
+        for _ in range(30):
+            p.tick()
+        p.memory[at["wBattleMonMoves"]] = M[move]
+        p.memory[at["wTestBattlePlayerSelectedMove"]] = M[move]
+        p.memory[at["wBattleMonPP"]] = 20
+        for i in range(4):
+            p.memory[at["wEnemyMonMoves"] + i] = M["SPLASH"]
+        write_word(p, at["wEnemyMonHP"], 900)
+        w("wEnemyMonType1", NORMAL)
+        w("wEnemyMonType2", NORMAL)
+        rec.menu = rec.prompt = False
+        tap(p, "a", hold=6, release=20)
+        tap(p, "start", hold=6, release=10)
+        for _ in range(1500):
+            if rec.prompt:  # "But nothing happened!" waits for a button
+                rec.prompt = False
+                tap(p, "a", hold=3, release=3)
+            p.tick()
+            if rec.menu:
+                break
+        for _ in range(40):
+            p.tick()
+
+    w("wImprovise", 0)
+    turn("SPLASH", env="room", state=None)
+    improvise("WATER_GUN", 99)
+    check(state() == STATE[None] and m("wImprovise") == 0, "Bond 99 cannot improvise")
+    tap(p, "b", hold=6, release=30)  # back out of the move menu the refusal left open
+    turn("SPLASH", state=None)
+    improvise("WATER_GUN", 100)
+    check(state() == STATE["SOAK"], f"START on Water Gun soaks the field, even in a room ({state()})")
+    check(word(p, at["wEnemyMonHP"]) == 900, "and deals no damage")
+    check(p.memory[at["wBattleMonPP"]] & 0x3F == 19, f"one PP is spent ({p.memory[at['wBattleMonPP']] & 0x3F})")
+    check(m("wImprovise") & 3 == 2, f"the next Improvise waits ({m('wImprovise') & 3} turns left)")
+    improvise("ROCK_THROW", 255)
+    check(state() == STATE["SOAK"], "a second Improvise before the wait is over is refused")
+    tap(p, "b", hold=6, release=30)
+    for _ in range(2):
+        turn("SPLASH")
+    w("wFieldTurns", 0)
+    w("wFieldState", 0)
+    improvise("ROCK_THROW", 255)
+    check(state() == STATE["RUBL"] and m("wFieldOwner") & 1 == 0,
+          f"once it has run down, Rock Throw brings down cover for you ({state()})")
+    check(m("wFieldTurns") == TURNS + 2 - 1, f"a resonant Bond makes it last 2 turns longer ({m('wFieldTurns')} left)")
+
     print("Link battles:")
     w("wLinkState", 4)  # LINK_STATE_BATTLING, only while the move is used
     turn("WATER_GUN", env="room", state=None)

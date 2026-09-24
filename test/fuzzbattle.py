@@ -48,7 +48,7 @@ EXTRA = (
     "wTileMapBackup", "wActionCommandCue", "wActionCommandStreak",
     "wIsInBattle", "wResonanceMeter", "wResonanceTurns", "wTrainerPain",
     "wResonanceFlags", "wPartyMon1Bond", "wEventFlags",
-    "wFieldEnv", "wFieldState", "wFieldTurns",
+    "wFieldEnv", "wFieldState", "wFieldTurns", "wImprovise",
 )
 NUM_ENVS, NUM_FIELD_STATES, FIELD_TURNS = 8, 9, 5
 EVENT_RESONANCE_UNLOCKED = 0x6A
@@ -155,6 +155,8 @@ class Fuzzer:
         env, field, left = m[at["wFieldEnv"]], m[at["wFieldState"]], m[at["wFieldTurns"]]
         if env >= NUM_ENVS or field >= NUM_FIELD_STATES or left > FIELD_TURNS:
             self.fail(turn, f"field out of range: env {env}, state {field}, turns {left}")
+        if m[at["wImprovise"]] & 0x7F > 3:
+            self.fail(turn, f"Improvise wait {m[at['wImprovise']] & 0x7F} above 3")
         if field and not left:
             self.fail(turn, f"Field State {field} with no turns left")
         speed = m[at["wOptions"]] & 0x0F
@@ -187,7 +189,7 @@ class Fuzzer:
         bit = 1 << (EVENT_RESONANCE_UNLOCKED % 8)
         m[event] = (m[event] | bit) if rng.random() < 0.8 else (m[event] & ~bit)
         if rng.random() < 0.3:
-            m[at["wPartyMon1Bond"]] = rng.choice((199, 200, 255))
+            m[at["wPartyMon1Bond"]] = rng.choice((99, 100, 199, 200, 255))
         if rng.random() < 0.2:
             m[at["wResonanceMeter"]] = MAX_METER
         # the battle stands somewhere random, and sometimes on a random field
@@ -212,7 +214,7 @@ class Fuzzer:
                     turn += 1
                     stalled = 0
             if held is None and rng.random() < 0.25:
-                held = [rng.choice("aabbb") if rng.random() < 0.9 else rng.choice(("up", "down", "select")),
+                held = [rng.choice("aabbb") if rng.random() < 0.9 else rng.choice(("up", "down", "select", "start")),
                         rng.randrange(1, 10)]
                 self.p.button_press(held[0])
             elif held is not None:

@@ -55,6 +55,7 @@ DEF ACTION_BUTTON_CHAR     EQU '<NULL>'
 	const ACTION_BADGE_STUNNED    ; 10 the turn it cost
 	const ACTION_BADGE_RESONANCE  ; 11 Resonance started
 	const ACTION_BADGE_DODGED     ; 12 a Dodge Phase without a scratch
+	const ACTION_BADGE_IMPROVISE  ; 13 a move used on the field
 
 ; wActionCommandCue
 	const_def 1
@@ -998,6 +999,7 @@ ActionBadgeStrings:
 	dw .stunned
 	dw .resonance
 	dw .dodged
+	dw .improvise
 
 .early   db "TOO SOON@"
 .great   db "GREAT!@"
@@ -1011,3 +1013,4 @@ ActionBadgeStrings:
 .stunned   db "STUNNED@"
 .resonance db "RESONANCE!@"
 .dodged    db "DODGED!@"
+.improvise db "IMPROV!@"
