@@ -264,6 +264,15 @@ Integration build sha1 `493aea78c62e631b76d3973f106f9ffcabf722aa`.
   It needs Bond 100, can be used once every 3 turns, and a resonant Bond makes
   the state last 2 turns longer. It prints no text: an IMPROV! badge shows.
   Brock's badge scene explains the button.
+- **Gym arenas.** Every battle in a gym is fought on that gym's own arena:
+  - Brock's rock pillars (a cave);
+  - Misty's pool, which starts soaked;
+  - Surge's electric panels;
+  - Erika's tall grass, which can burn;
+  - Koga's poison mist, which a Gust or Whirlwind blows away;
+  - Sabrina's dim room;
+  - Blaine's volcano floor, which starts on fire;
+  - Giovanni's shifting sand, which starts dusty.
 - **Anime-style techniques, unlocked by Bond.**
   - Improvising Quick Attack, Agility or Double Team dodges the next attack.
   - Improvising while resonating is a Counter Shield: the attack goes ahead

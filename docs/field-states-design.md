@@ -68,7 +68,20 @@ cleared with the battle data, and they took WRAM0 from 30 bytes free to 26.
 - The countdown runs at the top of the battle loop, which is entered again
   after a Pokemon faints and is replaced, so a faint mid-turn costs the state an
   extra turn.
-- Still to build: gym arenas redesigned around the states.
+- Every gym is an arena (`GymArenas`), for every battle inside it:
+
+  | Gym | Place | Starting state |
+  |---|---|---|
+  | Brock | cave | none; Earthquake and Rock Slide bring down cover |
+  | Misty | sea | SOAK |
+  | Surge | wire | none; Electric overcharges |
+  | Erika | leaf | none; Fire sets the grass alight |
+  | Koga | room | DARK, a poison mist until a Gust or Whirlwind clears it |
+  | Sabrina | tomb | none; Smokescreen darkens |
+  | Blaine | room | FIRE, the volcano floor |
+  | Giovanni | sand | DUST |
+
+  Anywhere but sand, a Gust or Whirlwind blows a Field State away.
 
 ## Improvise
 

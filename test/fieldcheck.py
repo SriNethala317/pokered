@@ -311,6 +311,33 @@ def main():
     check(state() == STATE[None], "no Field State in a link battle")
 
     p.stop(save=False)
+
+    print("Gym arenas:")
+    from actionedge import Battle
+
+    class GymBattle(Battle):
+        gym_map = None
+
+        def on(self, name):
+            if name == "InitOpponent" and self.gym_map is not None:
+                self.w("wCurMap", self.gym_map)
+            super().on(name)
+
+    for gym, map_id, env, field in (("Cerulean", 0x41, "sea", "SOAK"), ("Fuchsia", 0x9D, "room", "DARK"),
+                                    ("Pewter", 0x36, "cave", None)):
+        GymBattle.gym_map = map_id
+        b = GymBattle(rom, sym, options=0x03 | 0b100000)
+        got = (b.m("wFieldEnv"), b.m("wFieldState"), b.m("wFieldTurns"))
+        want = (ENV[env], STATE[field], TURNS - 1 if field else 0)  # the first turn has begun
+        check(got == want, f"{gym} Gym: place, state and turns {got} (want {want})")
+        if gym == "Fuchsia":
+            def stage():
+                b.stage(player_move=0x10, enemy_move=M["SPLASH"], badges=0)  # Gust
+            b.turn(stage=stage)
+            check(b.m("wFieldState") == 0, f"a Gust blows Koga's mist away ({b.m('wFieldState')})")
+        b.p.stop(save=False)
+    GymBattle.gym_map = None
+
     print()
     print("FAILED" if failures else "all field checks passed")
     return 1 if failures else 0

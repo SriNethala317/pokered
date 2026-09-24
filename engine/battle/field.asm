@@ -40,6 +40,30 @@ DEF FIELD_RAMP_WIDTH EQU _RS
 
 ; Called at the end of InitBattleVariables: where is this battle?
 InitBattleField::
+	; every gym is an arena built around its leader (GymArenas)
+	ld a, [wCurMap]
+	ld hl, GymArenas
+	ld de, 3
+	call IsInArray
+	jr nc, .notGym
+	inc hl
+	ld a, [hli]
+	ld [wFieldEnv], a
+	ld a, [hl]
+	ld [wFieldState], a
+	and a
+	ld a, 0
+	jr z, .gotGymTurns
+	push hl
+	call GetFieldRamp
+	inc hl
+	inc hl
+	ld a, [hl] ; FIELD_RAMP_TURNS
+	pop hl
+.gotGymTurns
+	ld [wFieldTurns], a
+	ret
+.notGym
 	ld a, [wWalkBikeSurfState]
 	cp 2 ; surfing
 	ld b, ENV_WATER
@@ -375,6 +399,8 @@ FieldAfterMove::
 	jr z, .sand
 	cp GUST
 	jr z, .sand
+	cp WHIRLWIND
+	jr z, .sand
 	cp SMOKESCREEN
 	jr z, .dark
 	cp NIGHT_SHADE
@@ -425,9 +451,15 @@ FieldAfterMove::
 .sand
 	ld a, c
 	cp ENV_SAND
-	ret nz
+	jr nz, .blowAway
 	ld a, FIELD_SANDSTORM
 	jr .set
+.blowAway
+	; anywhere else a gust clears the field: Koga's mist has to be blown away
+	ld a, [wFieldState]
+	and a
+	ret z
+	jp ClearField
 .dark
 	ld a, c
 	cp ENV_TOWER
@@ -590,6 +622,18 @@ FieldStateLabels:
 	db "ZAP!" ; FIELD_OVERCHARGE
 	db "DARK" ; FIELD_BLACKOUT
 	assert_table_length NUM_FIELD_STATES - 1
+
+; Each gym's arena: the place, and the Field State its battles start on.
+GymArenas:
+	db PEWTER_GYM,    ENV_CAVE,   FIELD_NONE      ; rock pillars to bring down
+	db CERULEAN_GYM,  ENV_WATER,  FIELD_SOAKED    ; a pool: soak it, shock it, freeze it
+	db VERMILION_GYM, ENV_PLANT,  FIELD_NONE      ; electric panels
+	db CELADON_GYM,   ENV_GRASS,  FIELD_NONE      ; tall grass that can burn
+	db FUCHSIA_GYM,   ENV_INDOOR, FIELD_BLACKOUT  ; poison mist until a gust clears it
+	db SAFFRON_GYM,   ENV_TOWER,  FIELD_NONE      ; a dim, psychic room
+	db CINNABAR_GYM,  ENV_INDOOR, FIELD_BURNING   ; a volcano floor
+	db VIRIDIAN_GYM,  ENV_SAND,   FIELD_SANDSTORM ; shifting sand
+	db -1 ; end
 
 ; boosts, the chance a slip, dust or the dark makes a move miss, and turns
 FieldRamp:
