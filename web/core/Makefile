@@ -16,6 +16,7 @@ DEFS := -DGB_DISABLE_TIMEKEEPING -DGB_DISABLE_REWIND -DGB_DISABLE_DEBUGGER \
 WARN := -Wno-multichar -Wno-unused-result -Wno-missing-braces -Wno-int-in-bool-context \
 	-Wno-unknown-warning-option -Wno-format-truncation -Wno-nonnull
 CFLAGS ?= -O2
+EMCC ?= emcc
 ALL_CFLAGS := $(CFLAGS) -std=gnu11 $(DEFS) $(WARN) -I$(SAMEBOY) -I$(GEN)
 
 EXPORTS := shim_create shim_destroy shim_load_rom shim_reset shim_sram_size shim_sram_save \
@@ -46,14 +47,14 @@ $(OUT)/native/liblinkshim.so: link_shim.c link_shim.h $(GEN)/dmg_boot.h $(CORE_S
 # The core is compiled with GB_INTERNAL, as SameBoy's own Makefile does.
 $(OUT)/obj/%.o: $(SAMEBOY)/Core/%.c
 	@mkdir -p $(dir $@)
-	emcc $(ALL_CFLAGS) -O3 -DGB_INTERNAL -c $< -o $@
+	$(EMCC) $(ALL_CFLAGS) -O3 -DGB_INTERNAL -c $< -o $@
 
 $(OUT)/obj/link_shim.o: link_shim.c link_shim.h $(GEN)/dmg_boot.h
 	@mkdir -p $(dir $@)
-	emcc $(ALL_CFLAGS) -O3 -c $< -o $@
+	$(EMCC) $(ALL_CFLAGS) -O3 -c $< -o $@
 
 $(OUT)/core.js: $(OUT)/obj/link_shim.o $(addprefix $(OUT)/obj/,$(addsuffix .o,$(CORE_FILES)))
-	emcc -O3 -o $@ $^ \
+	$(EMCC) -O3 -o $@ $^ \
 		-sMODULARIZE=1 -sEXPORT_NAME=createCore -sEXPORT_ES6=1 -sENVIRONMENT=web,worker,node \
 		-sALLOW_MEMORY_GROWTH=1 -sFILESYSTEM=0 \
 		-sEXPORTED_FUNCTIONS="$(EM_EXPORTS)" \
