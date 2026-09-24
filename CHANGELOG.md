@@ -207,6 +207,16 @@ Integration build sha1 `493aea78c62e631b76d3973f106f9ffcabf722aa`.
   - Brock, Giovanni and every ordinary trainer are as they were.
   This is the groundwork for opening up gyms 2 to 7 in any order. The map
   gates themselves are not changed yet.
+- **Field abilities through Bond, no HM needed.** A Pokemon with Bond 120 or
+  more lists a field ability its type suits, even if it never learned the
+  move:
+  - Grass and Bug types can CUT;
+  - Water types can SURF;
+  - Fighting, Rock and Ground types can use STRENGTH;
+  - Electric types can FLASH;
+  - Flying types can FLY.
+  Each still needs the badge the HM always needed. `bondcheck.py` checks a
+  Water-type that knows only Tackle gets SURF at Bond 120 and not at 119.
 
 ### Play with friends in the browser (multiplayer, phases 0-3)
 

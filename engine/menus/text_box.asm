@@ -556,6 +556,7 @@ GetMonFieldMoves:
 	jr .loop
 .done
 	pop hl
+	callfar AddBondFieldMoves ; a close Pokemon of the right type needs no HM
 	ret
 
 INCLUDE "data/moves/field_moves.asm"

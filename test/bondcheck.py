@@ -172,6 +172,39 @@ def walk_checks(rom, sym, symbols):
 
 
 MAX_BOND = 255
+WATER, TACKLE = 0x15, 0x21
+
+
+def field_ability_checks(rom, sym, symbols):
+    """A Water-type that does not know Surf gets SURF in its menu at Bond 120."""
+    tilemap = symbols["wTileMap"][1]
+
+    def menu_text(bond):
+        p, at = boot_to_debug_menu(rom, sym)
+        tap(p, "down", hold=8, release=24)
+        tap(p, "a", hold=8, release=40)
+        for n in range(INTRO_TAPS):
+            tap(p, "b", hold=4, release=20)
+            if n % 10 == 9:
+                tap(p, "start", hold=6, release=40)
+                if "ITEM" in "".join(read_screen(p, tilemap)):
+                    break
+        base = symbols["wPartyMon1"][1]
+        p.memory[base + 5] = WATER  # MON_TYPE1
+        p.memory[base + 6] = WATER  # MON_TYPE2
+        for i in range(4):
+            p.memory[symbols["wPartyMon1Moves"][1] + i] = TACKLE if i == 0 else 0
+        set_bond(p, symbols, 0, bond)
+        # POKeMON is the second START menu entry; the first Pokemon; its menu
+        tap(p, "down", hold=6, release=20)
+        tap(p, "a", hold=6, release=60)
+        tap(p, "a", hold=6, release=60)
+        text = "\n".join(read_screen(p, tilemap))
+        p.stop(save=False)
+        return text
+
+    check("SURF" in menu_text(120), "Bond 120: a Water-type that never learned Surf can SURF")
+    check("SURF" not in menu_text(119), "Bond 119: it cannot")
 
 
 def main():
@@ -193,6 +226,9 @@ def main():
 
         print("walking")
         walk_checks(rom, sym, symbols)
+
+        print("field abilities")
+        field_ability_checks(rom, sym, symbols)
     except NotReached as e:
         check(False, str(e))
 
