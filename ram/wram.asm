@@ -177,10 +177,10 @@ wShadowOAMBackupEnd::
 
 NEXTU
 ; list of indexes to patch with SERIAL_NO_DATA_BYTE after transfer
-wSerialPartyMonsPatchList:: ds 200
+wSerialPartyMonsPatchList:: ds SERIAL_PATCH_LIST_LENGTH
 
 ; list of indexes to patch with SERIAL_NO_DATA_BYTE after transfer
-wSerialEnemyMonsPatchList:: ds 200
+wSerialEnemyMonsPatchList:: ds SERIAL_PATCH_LIST_LENGTH
 ENDU
 
 

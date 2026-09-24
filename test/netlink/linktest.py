@@ -106,6 +106,11 @@ class Player:
             raise AssertionError("never reached the overworld")
         self.frames(60)
         self.give_mon(self.species, 10)
+        # Skipping the nickname prompt leaves the nickname unwritten, and the
+        # ROM now refuses a traded Pokemon whose name has no terminator (as
+        # glitch trades use), so give it the name the game would have.
+        for i, ch in enumerate(b"\x8f\x80\x8b\x50"):  # "PAL@"
+            c.write(A("wPartyMonNicks") + i, ch)
         e = K["EVENT_GOT_POKEDEX"]
         c.write(A("wEventFlags") + e // 8, self.mem("wEventFlags", e // 8) | (1 << (e % 8)))
         c.write(A("wDestinationMap"), K["PEWTER_CITY"])
@@ -246,6 +251,8 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--delay", type=int, default=3, help="one-way delay in frames")
     ap.add_argument("--stage", type=int, default=5, help="stop after this stage")
+    ap.add_argument("--hostile", choices=("species", "name", "move", "count"),
+                    help="the guest sends a party no real game could have; the host must refuse it")
     ap.add_argument("--drop", action="store_true", help="cut the cable mid-trade and check the saves")
     ap.add_argument("--together", action="store_true",
                     help="both talk to the receptionist at once; the guest is gated as the web page does")
@@ -333,8 +340,41 @@ def main():
             and guest.mem("wEnemyPartySpecies") == host.species
         )
 
+    debug = {}
+    if args.hostile:
+        # The guest sends a party no real game could have; the host must refuse
+        # it and go back to the Cable Club room without using any of it.
+        g = guest.c
+        if args.hostile == "species":
+            g.write(A("wPartySpecies"), 0x1F)  # a MissingNo. index
+            g.write(A("wPartyMon1Species"), 0x1F)
+        elif args.hostile == "name":
+            for i in range(11):
+                g.write(A("wPartyMonNicks") + i, 0x80)  # no terminator
+        elif args.hostile == "move":
+            g.write(A("wPartyMon1Moves"), 0xFF)
+        elif args.hostile == "count":
+            g.write(A("wPartyCount"), 7)
+        refused = host.c.hook(BA("ReturnToCableClubRoom")[1], BA("ReturnToCableClubRoom")[0])
+    if os.environ.get("LINKDEBUG"):
+        for p in (host, guest):
+            for label in os.environ["LINKDEBUG"].split(","):
+                bank, addr = BA(label)
+                debug[(p.name, p.c.hook(addr, bank))] = label
+    if args.hostile:
+        def refused_it():
+            return refused in host.seen
+        run_linked(host, guest, wire, refused_it, 60000)
+        print(f"hostile {args.hostile}: the host refused the party and went back to the Cable Club room")
+        return 0
     stall = run_linked(host, guest, wire, parties_swapped, 60000)
     print(f"stage 4: parties exchanged after {wire.tick} ticks, {wire.messages} messages, stalls {stall}")
+    for p in (host, guest):
+        fired = sorted(label for (name, h), label in debug.items() if name == p.name and h in p.seen)
+        if debug:
+            print(f"  {p.name} passed: {fired}")
+            for field in ("wEnemyMonOT", "wEnemyMonNicks", "wLinkEnemyTrainerName"):
+                print(f"    {field}: {[hex(p.mem(field, i)) for i in range(11)]}")
     if args.stage <= 4:
         return 0
 

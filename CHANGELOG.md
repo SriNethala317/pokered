@@ -192,6 +192,48 @@ Integration build sha1 `493aea78c62e631b76d3973f106f9ffcabf722aa`.
     - the unlock is at Brock;
     - the final battle theme plays while it lasts.
 
+### Play with friends in the browser (multiplayer, phases 0-3)
+
+- **A web player** (`web/`, built with `make web`) runs the game in a phone or
+  desktop browser with no app to install.
+  - Each player loads their own Pokemon Red ROM. The page patches it with
+    `pokered.bps` and refuses anything but this exact build.
+  - It runs at 60 fps on SameBoy compiled to WebAssembly, with touch and
+    keyboard controls, and saves in the browser with export and import.
+- **Rooms with no server.**
+  - Players join a room by code and an optional password, over WebRTC. Public
+    Nostr relays introduce players to each other and see nothing else.
+  - The room's creator approves every join and can kick, with up to 8 players.
+    The creator relays for anyone who cannot connect directly.
+  - Friends on the same map are drawn walking around, with name tags and chat.
+  - Every packet is checked for shape, size and rate.
+- **Trades and battles over the game's own link cable.** Two players accept a
+  session in the page, and the page carries the link cable's bytes between
+  them, exactly as a real cable does.
+  - A session that goes quiet for 10 seconds ends. A game that was mid-link
+    restarts from its last save.
+  - A dropped trade leaves both saves as they were.
+- **The ROM no longer trusts what the other Game Boy sends.** Gen 1 link
+  trades are a known way to run arbitrary code, through glitch species and
+  names with no terminator. Before the game uses a received party it now
+  checks:
+  - the count is 1 to 6, and the species list is terminated;
+  - every species is real and matches its struct;
+  - every move exists, every level is 1 to 100, and no HP is above its max;
+  - every OT name and nickname ends inside 11 bytes.
+  A party that fails any of these is never used: the player goes straight
+  back to the Cable Club room.
+- **The patch list is bounded.** The received patch list is walked for at most
+  its 200 bytes, and a patch may only land inside the enemy party's data.
+  Before, both were open-ended.
+- **Not yet:**
+  - GitHub Pages publishing (the deploy job is switched off until you approve
+    it);
+  - testing on real phones;
+  - link battles, where only trades are tested;
+  - faster trades. Every byte costs a round trip, so a trade takes about 2
+    minutes at 100 ms.
+
 ### Battle environments and Field States
 
 - **Every battle happens somewhere.** It can be grass, sea (surfing), a cave,
@@ -389,6 +431,15 @@ New checks under `test/`, all run against each build:
   `pokered_debug.gbc`. Blue's targets are still in the Makefile but are no
   longer built, patched or tested, and every battle check runs on the Red
   debug build. `make bps` writes `pokered.bps` only.
+- `netlink/linktest.py` - two consoles joined by a delayed cable: they
+  connect, reach the Trade Center, swap parties and trade. `--drop` cuts the
+  cable mid-trade and checks both saves; `--together` has both players talk to
+  the receptionist at once. `--hostile species|name|move|count` has the guest
+  send a party no real game could have, and checks the host refuses it. Its
+  fixture now names the Pokemon it gives (the prompt it skips used to leave the
+  name unwritten, which the ROM rightly refuses). `test/web/*.mjs` test the
+  page's own code in node, including a full trade relayed through a third
+  player.
 - `fieldcheck.py` - staged turns with action commands Off, reading the damage
   as it enters the field code and as it is dealt:
   - each state is made by its move in its place and not elsewhere;

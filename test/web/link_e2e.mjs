@@ -114,6 +114,9 @@ class Player {
     this.seen.clear();
     this.hooks();
     this.frames(30);
+    // Skipping the nickname prompt leaves the nickname unwritten, and the ROM
+    // refuses a traded Pokemon whose name has no terminator, so name it "PAL".
+    [0x8f, 0x80, 0x8b, 0x50].forEach((ch, i) => this.write(A("wPartyMonNicks") + i, ch));
     const e = K.EVENT_GOT_POKEDEX;
     this.write(A("wEventFlags") + (e >> 3), this.read(A("wEventFlags") + (e >> 3)) | (1 << (e & 7)));
     this.write(A("wDestinationMap"), K.PEWTER_CITY);

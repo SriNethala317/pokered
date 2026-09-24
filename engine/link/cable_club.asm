@@ -137,7 +137,7 @@ CableClub_DoBattleOrTradeAgain:
 	ld [de], a
 	ld hl, wSerialPartyMonsPatchList
 	ld de, wSerialEnemyMonsPatchList
-	ld bc, 200
+	ld bc, SERIAL_PATCH_LIST_LENGTH
 	vc_hook Wireless_ExchangeBytes_patch_lists
 	call Serial_ExchangeBytes
 	ld a, IE_SERIAL | IE_TIMER | IE_VBLANK
@@ -233,6 +233,15 @@ CableClub_DoBattleOrTradeAgain:
 	ld hl, wEnemyMons
 	ld c, 2 ; patch list has 2 parts
 .unpatchEnemyMonsLoop
+	; The other side wrote this list, so it may be missing its terminators:
+	; stop at the end of the list rather than read on through memory.
+	ld a, e
+	cp LOW(wSerialEnemyMonsPatchList + SERIAL_PATCH_LIST_LENGTH)
+	jr nz, .inPatchList
+	ld a, d
+	cp HIGH(wSerialEnemyMonsPatchList + SERIAL_PATCH_LIST_LENGTH)
+	jr z, .enemyPatchListDone
+.inPatchList
 	ld a, [de]
 	inc de
 	and a
@@ -249,8 +258,18 @@ CableClub_DoBattleOrTradeAgain:
 	dec a
 	ld c, a
 	add hl, bc
+	; and a patch may only land inside the enemy's party data
+	ld a, h
+	cp HIGH(wTrainerHeaderPtr)
+	jr c, .patchInRange
+	jr nz, .patchOutOfRange
+	ld a, l
+	cp LOW(wTrainerHeaderPtr)
+	jr nc, .patchOutOfRange
+.patchInRange
 	ld a, SERIAL_NO_DATA_BYTE
 	ld [hl], a
+.patchOutOfRange
 	pop bc
 	pop hl
 	jr .unpatchEnemyMonsLoop
@@ -258,6 +277,15 @@ CableClub_DoBattleOrTradeAgain:
 	ld hl, wEnemyMons + (SERIAL_PREAMBLE_BYTE - 1)
 	dec c
 	jr nz, .unpatchEnemyMonsLoop
+.enemyPatchListDone
+	; Gen 1 trusts whatever the other Game Boy sends, and glitch species or names
+	; with no terminator can run arbitrary code. Nothing is used until it checks out.
+	call ValidateEnemyLinkParty
+	jr nc, .enemyPartyValid
+	ld a, SFX_DENIED
+	call PlaySound
+	jp ReturnToCableClubRoom
+.enemyPartyValid
 	ld a, LOW(wEnemyMonOT)
 	ld [wUnusedNamePointer], a
 	ld a, HIGH(wEnemyMonOT)
@@ -983,3 +1011,156 @@ LoadTrainerInfoTextBoxTiles:
 	ld hl, vChars2 tile $76
 	lb bc, BANK(TrainerInfoTextBoxTileGraphics), (TrainerInfoTextBoxTileGraphicsEnd - TrainerInfoTextBoxTileGraphics) / TILE_SIZE
 	jp CopyVideoData
+
+; Carry if the party the other Game Boy sent could not be a real one.
+ValidateEnemyLinkParty:
+	ld a, [wEnemyPartyCount]
+	and a
+	jr z, .bad
+	cp PARTY_LENGTH + 1
+	jr nc, .bad
+	ld b, a
+	; the species list ends right after the last Pokemon
+	ld hl, wEnemyPartySpecies
+	ld e, a
+	ld d, 0
+	add hl, de
+	ld a, [hl]
+	cp -1
+	jr nz, .bad
+	ld hl, wEnemyMons
+	ld de, wEnemyPartySpecies
+	push bc
+.monLoop
+	call .checkMon
+	jr c, .badPopBC
+	push bc
+	ld bc, PARTYMON_STRUCT_LENGTH
+	add hl, bc
+	pop bc
+	inc de
+	dec b
+	jr nz, .monLoop
+	pop bc
+	; every OT name, and every nickname, ends inside its NAME_LENGTH
+	ld hl, wEnemyMonOT
+	push bc
+	call .checkNames
+	pop bc
+	ret c
+	ld hl, wEnemyMonNicks
+	jr .checkNames
+
+.badPopBC
+	pop bc
+.bad
+	scf
+	ret
+
+; hl = a party struct, de = its entry in the species list. Carry unless it is a
+; real species, the one listed, with real moves, a real level and no more HP
+; than its max.
+.checkMon
+	push bc
+	push de
+	push hl
+	ld a, [de]
+	ld b, a
+	call .realSpecies
+	jr c, .monDone
+	ld a, [hl] ; MON_SPECIES
+	cp b
+	jr nz, .monBad
+	push hl
+	ld bc, MON_MOVES
+	add hl, bc
+	ld c, NUM_MOVES
+.moveLoop
+	ld a, [hli]
+	cp NUM_ATTACKS + 1
+	jr nc, .monBadPop
+	dec c
+	jr nz, .moveLoop
+	pop hl
+	push hl
+	ld bc, MON_LEVEL
+	add hl, bc
+	ld a, [hl]
+	and a
+	jr z, .monBadPop
+	cp MAX_LEVEL + 1
+	jr nc, .monBadPop
+	pop hl
+	push hl
+	ld bc, MON_HP
+	add hl, bc
+	ld d, [hl]
+	inc hl
+	ld e, [hl] ; de = HP
+	ld bc, MON_MAXHP - (MON_HP + 1)
+	add hl, bc
+	ld a, [hli]
+	ld b, a
+	ld a, [hl] ; b:a = max HP
+	sub e
+	ld a, b
+	sbc d ; carry if max HP < HP
+	pop hl
+	jr c, .monBad
+	and a
+	jr .monDone
+.monBadPop
+	pop hl
+.monBad
+	scf
+.monDone
+	pop hl
+	pop de
+	pop bc
+	ret
+
+; carry unless a is a species that exists; keeps bc, de and hl
+.realSpecies
+	and a
+	jr z, .notReal
+	cp NUM_POKEMON_INDEXES + 1
+	jr nc, .notReal
+	push bc
+	push de
+	push hl
+	ld [wPokedexNum], a
+	predef IndexToPokedex
+	pop hl
+	pop de
+	pop bc
+	ld a, [wPokedexNum]
+	and a
+	ret nz
+.notReal
+	scf
+	ret
+
+; b names of NAME_LENGTH at hl must each hold a terminator: carry if one does not
+.checkNames
+	ld c, NAME_LENGTH
+.nameLoop
+	ld a, [hli]
+	cp '@'
+	jr z, .terminated
+	dec c
+	jr nz, .nameLoop
+	scf
+	ret
+.terminated
+	; skip the rest of this name
+	dec c
+	ld a, l
+	add c
+	ld l, a
+	jr nc, .noCarry
+	inc h
+.noCarry
+	dec b
+	jr nz, .checkNames
+	and a
+	ret
