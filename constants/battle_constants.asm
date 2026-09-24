@@ -144,3 +144,8 @@ DEF EFFECTIVENESS_MASK EQU %01111111
 	const ACTION_EFFECT_ROLL    ; 0 the move's secondary effect rolls as usual
 	const ACTION_EFFECT_FORCED  ; 1 a perfect attack: it always lands
 	const ACTION_EFFECT_BLOCKED ; 2 a perfect brace: it never does
+
+; wActionCommandFoe
+	const_def
+	const ACTION_FOE_FEINT ; 0 a false cue comes first
+	const ACTION_FOE_TIMED ; 1 the trainer times this attack too

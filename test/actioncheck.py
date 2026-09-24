@@ -9,6 +9,13 @@ The move's type picks the input, so each pattern is staged with a move of a
 matching type: Pound taps, Confusion snaps, Water Gun holds, Submission asks
 for three presses and Ember for a press on each of two cues.
 
+The badge count sets the difficulty (ActionRamp), so every turn writes
+wObtainedBadges first. Most checks run with three badges, the first row where
+every input is in use and nothing feints. The ramp checks then walk every row.
+The debug battle is a wild one, so a trainer's timing is either forced by
+writing wActionCommandFoe during the lead-in, or rolled for real by making the
+battle look like a trainer battle for the moment the attack is armed.
+
 The readings come from pyboy hooks rather than from watching memory between
 frames. ApplyActionCommand's entry sees the damage before any bonus, and
 ApplyAttackTo*Pokemon's entry sees the damage that is actually dealt, so the
@@ -40,6 +47,25 @@ LEAD_IN, WINDOW, BADGE = 1, 2, 4
 NONE, EARLY, GOOD, PERFECT = 0, 1, 2, 3
 # wActionCommandForceEffect
 ROLL, FORCED, BLOCKED = 0, 1, 2
+# wActionCommandFoe bits, and the badges ApplyActionCommand leaves behind
+FEINT, TIMED = 1 << 0, 1 << 1
+BADGE_DOUBLE, BADGE_FOE_GREAT, BADGE_FOE_BRACED = 6, 7, 8
+CUE_FEINT = 9
+
+# ActionRamp, one row per two badges: perfect and good windows, the patterns
+# in use, then the trainer-timing and feint chances out of 256.
+TAP, SNAP, HOLD, RAPID, DOUBLE = range(5)
+EVERY = (1 << 5) - 1
+RAMP = [
+    (18, 30, 1 << TAP, 0, 0),
+    (16, 26, (1 << TAP) | (1 << SNAP) | (1 << RAPID), 25, 0),
+    (15, 24, EVERY, 51, 0),
+    (14, 21, EVERY, 89, 43),
+    (13, 19, EVERY, 127, 63),
+]
+SNAP_PERFECT, SNAP_GOOD = 3, 6
+BADGES = [0, 0b1, 0b111, 0b11111, 0b1111111]  # one badge count for each row
+DEFAULT_BADGES = BADGES[2]
 BRN = 1 << 4
 CONFUSED = 1 << 7  # in w*BattleStatus1
 
@@ -56,6 +82,8 @@ HOOKED = (
     "ApplyAttackToPlayerPokemon",
     "FinishActionCommand",
     "PlayApplyingAttackAnimation",
+    "ArmActionCommand",
+    "ActionCommandTick",
 )
 
 
@@ -68,6 +96,9 @@ class Recorder:
         self.frame = 0
         self.reset()
 
+    trainer = False  # arm every attack as if in a trainer battle
+    _restore = False
+
     def reset(self):
         self.menu = False
         self.prompt = False
@@ -79,14 +110,31 @@ class Recorder:
         self.states = {}    # side -> wActionCommandState entering Apply
         self.force = {}     # side -> wActionCommandForceEffect as it is dealt
         self.extra = []     # frames each window added to an attack
+        self.foe = {}       # side -> wActionCommandFoe entering Apply
+        self.feinted = set()  # sides that showed a feint
+        self.badge = {}     # side -> the badge Apply left in wActionCommandResult
         self._finish = None
+        self._applying = None
 
     def side(self):
         return self.p.memory[self.at["hWhoseTurn"]]
 
     def on(self, name):
         p, at = self.p, self.at
-        if name == "DisplayBattleMenu":
+        if self._applying is not None and name != "ApplyActionCommand":
+            # the badge is set by the time anything else runs
+            self.badge.setdefault(self._applying, p.memory[at["wActionCommandResult"]])
+            self._applying = None
+        # A trainer battle only for as long as it takes to arm the attack:
+        # anything after it, from the window's first frame on, sees a wild one.
+        if self._restore and name != "ArmActionCommand":
+            p.memory[at["wIsInBattle"]] = 1
+            self._restore = False
+        if name == "ArmActionCommand":
+            if self.trainer and p.memory[at["wIsInBattle"]] == 1:
+                p.memory[at["wIsInBattle"]] = 2
+                self._restore = True
+        elif name == "DisplayBattleMenu":
             self.menu = True
         elif name == "WaitForTextScrollButtonPress":
             self.prompt = True
@@ -99,6 +147,8 @@ class Recorder:
                 self.hp_before[s] = word(p, at["wEnemyMonHP"])
                 self.results[s] = p.memory[at["wActionCommandResult"]]
                 self.states[s] = p.memory[at["wActionCommandState"]]
+                self.foe[s] = p.memory[at["wActionCommandFoe"]]
+                self._applying = s
         elif name in ("ApplyAttackToEnemyPokemon", "ApplyAttackToPlayerPokemon"):
             s = self.side()
             self.applied.setdefault(s, []).append(word(p, at["wDamage"]))
@@ -118,7 +168,8 @@ def install_hooks(p, rec, symbols):
         p.hook_register(bank, addr, rec.on, name)
 
 
-def stage(p, at, player_move, enemy_hp=900, enemy_move=POUND):
+def stage(p, at, player_move, enemy_hp=900, enemy_move=POUND,
+          badges=DEFAULT_BADGES, streak=0):
     """Give both sides plenty of HP and a known move for the coming turn.
 
     Rewritten before every turn, as in splitcheck.py: the engine owns this
@@ -143,13 +194,16 @@ def stage(p, at, player_move, enemy_hp=900, enemy_move=POUND):
     write_word(p, at["wBattleMonAttack"], ATTACK)
     write_word(p, at["wEnemyMonAttack"], ATTACK)
     write_word(p, at["wDamage"], 0)
+    p.memory[at["wObtainedBadges"]] = badges
+    # a streak run up by earlier turns would double a perfect hit
+    p.memory[at["wActionCommandStreak"]] = streak
 
 
 def plan(steps):
     """A side's inputs, one step at a time: (button, cue, frames, hold).
 
-    cue is which cue of the attack to count from (0 for the first), or None to
-    press as soon as the lead-in starts. hold is how many frames the button
+    cue is which cue of the attack to count from (0 for the first), None to
+    press as soon as the lead-in starts, or "feint" to press on a feint. hold is how many frames the button
     stays down, or ("cue", k) to let go k frames after the next cue appears.
     The shorthand (button, when) is one press, when frames after the first cue
     or "lead-in"."""
@@ -163,10 +217,12 @@ def plan(steps):
 
 
 def take_turn(p, at, rec, player_move=POUND, presses=None, enemy_hp=900,
-              enemy_move=None, shot=None):
+              enemy_move=None, shot=None, badges=DEFAULT_BADGES, streak=0,
+              foe=None):
     """Play one turn. presses maps a side (0 player, 1 opponent) to its inputs,
     see plan(). enemy_move defaults to the player's move. shot is a filename
-    prefix: the screen is saved as the player's cue and result badge appear."""
+    prefix: the screen is saved as the player's cue and result badge appear.
+    foe maps a side to wActionCommandFoe bits forced on as its lead-in starts."""
     plans = {side: plan(steps) for side, steps in (presses or {}).items()}
     if enemy_move is None:
         enemy_move = POUND if player_move in (GROWL, DOUBLESLAP) else player_move
@@ -179,7 +235,7 @@ def take_turn(p, at, rec, player_move=POUND, presses=None, enemy_hp=900,
     for _ in range(30):
         p.tick()
         rec.frame += 1
-    stage(p, at, player_move, enemy_hp, enemy_move)
+    stage(p, at, player_move, enemy_hp, enemy_move, badges, streak)
     tap(p, "a", hold=6, release=20)
     tap(p, "a", hold=6, release=0)
     rec.reset()
@@ -195,6 +251,8 @@ def take_turn(p, at, rec, player_move=POUND, presses=None, enemy_hp=900,
         if state != prev:
             if state == WINDOW:
                 cues[side].append(rec.frame)
+            if state == LEAD_IN and foe and side in foe and not cues[side]:
+                p.memory[at["wActionCommandFoe"]] |= foe[side]
             if shot and side == 0 and state in (LEAD_IN, WINDOW, BADGE):
                 name = {LEAD_IN: "lead_in", WINDOW: "cue", BADGE: "badge"}[state]
                 pending_shot = (rec.frame + 4, name)
@@ -220,6 +278,8 @@ def take_turn(p, at, rec, player_move=POUND, presses=None, enemy_hp=900,
             button, cue, when, hold = plans[side][0]
             if cue is None:
                 fire = state == LEAD_IN
+            elif cue == "feint":
+                fire = state == LEAD_IN and p.memory[at["wActionCommandCue"]] == CUE_FEINT
             else:
                 fire = len(cues[side]) > cue and rec.frame - cues[side][cue] == when
             if fire:
@@ -228,6 +288,10 @@ def take_turn(p, at, rec, player_move=POUND, presses=None, enemy_hp=900,
                 plans[side].pop(0)
         p.tick()
         rec.frame += 1
+        if state == LEAD_IN and p.memory[at["wActionCommandCue"]] == CUE_FEINT:
+            if shot and side not in rec.feinted:
+                pending_shot = (rec.frame + 1, "feint")
+            rec.feinted.add(side)
         if pending_shot and rec.frame == pending_shot[0]:
             p.screen.image.save(f"{shot}_{pending_shot[1]}.png")
             pending_shot = None
@@ -273,6 +337,10 @@ def braced(d):
     return max(d // 2, 1)
 
 
+def doubled(d):
+    return min(d * 2, 0xFFFF)
+
+
 def main():
     rom_path = sys.argv[1] if len(sys.argv) > 1 else "pokeblue_debug.gbc"
     sym_path = sys.argv[2] if len(sys.argv) > 2 else "pokeblue_debug.sym"
@@ -285,7 +353,8 @@ def main():
         return 1
     symbols = load_symbols(sym_path)
     for name in ("wEnemyMonMoves", "wEnemyMonStatus", "wBattleMonStatus",
-                 "wActionCommandForceEffect"):
+                 "wActionCommandForceEffect", "wActionCommandFoe",
+                 "wActionCommandStreak", "wActionCommandCue", "wObtainedBadges"):
         at[name] = symbols[name][1]
     rec = Recorder(p, at)
     install_hooks(p, rec, symbols)
@@ -349,7 +418,8 @@ def main():
               f"Doubleslap: every hit {applied} deals {want}, not compounded")
 
     def turn_landing(**kw):
-        # Submission is 80% accurate: retry a miss rather than count it
+        # Submission is 80% accurate, and a Confusion can leave its target too
+        # confused to hit back: retry either rather than count it
         for _ in range(5):
             presses = kw.get("presses") or {}
             r = turn(**{**kw, "presses": {k: list(v) if isinstance(v, list) else v
@@ -359,16 +429,16 @@ def main():
         return r
 
     print("Patterns:")
-    # Confusion is Psychic: a snap, with half the time to press.
-    r = turn(player_move=CONFUSION, presses={0: ("a", 3), 1: ("b", 3)})
+    # Confusion is Psychic: a snap, with less time to press.
+    r = turn_landing(player_move=CONFUSION, presses={0: ("a", 3), 1: ("b", 3)})
     expect_scaled(r, 0, PERFECT, boosted, "snap: A on the cue")
     expect_scaled(r, 1, PERFECT, braced, "snap: B on the cue")
-    r = turn(player_move=CONFUSION, presses={0: ("a", 9), 1: ("b", 9)})
-    expect_scaled(r, 0, GOOD, boosted, "snap: A 9 frames on is only good")
-    expect_scaled(r, 1, GOOD, braced, "snap: B 9 frames on is only good")
-    r = turn(player_move=CONFUSION, presses={0: ("a", 14), 1: ("b", 14)})
-    expect_scaled(r, 0, NONE, unchanged, "snap: A 14 frames on, good for a tap, is too late")
-    expect_scaled(r, 1, NONE, unchanged, "snap: B 14 frames on is too late")
+    r = turn_landing(player_move=CONFUSION, presses={0: ("a", 14), 1: ("b", 14)})
+    expect_scaled(r, 0, GOOD, boosted, "snap: A 14 frames on, perfect for a tap, is only good")
+    expect_scaled(r, 1, GOOD, braced, "snap: B 14 frames on is only good")
+    r = turn_landing(player_move=CONFUSION, presses={0: ("a", 20), 1: ("b", 20)})
+    expect_scaled(r, 0, NONE, unchanged, "snap: A 20 frames on, good for a tap, is too late")
+    expect_scaled(r, 1, NONE, unchanged, "snap: B 20 frames on is too late")
 
     # Water Gun: hold from the start, let go on the cue.
     r = turn(player_move=WATER_GUN, presses={0: ("a", None, 0, ("cue", 3)),
@@ -418,11 +488,102 @@ def main():
         burns += bool(p.memory[at["wEnemyMonStatus"]] & BRN) and r.results.get(0) == PERFECT
     check(burns == 3, f"a perfect Ember burned {burns} time(s) out of 3")
 
+    print("Ramp:")
+    for tier, badges in enumerate(BADGES):
+        perfect, good = RAMP[tier][:2]
+        name = f"{bin(badges).count('1')} badge(s)"
+        r = turn(badges=badges, presses={0: ("a", 3), 1: ("b", 3)})
+        expect_scaled(r, 0, PERFECT, boosted, f"{name}: A on the cue")
+        expect_scaled(r, 1, PERFECT, braced, f"{name}: B on the cue")
+        r = turn(badges=badges, presses={0: ("a", perfect + 3), 1: ("b", perfect + 3)})
+        expect_scaled(r, 0, GOOD, boosted, f"{name}: A {perfect + 3} frames on is good")
+        expect_scaled(r, 1, GOOD, braced, f"{name}: B {perfect + 3} frames on is good")
+        r = turn(badges=badges, presses={0: ("a", good + 3), 1: ("b", good + 3)})
+        expect_scaled(r, 0, NONE, unchanged, f"{name}: A {good + 3} frames on is too late")
+        expect_scaled(r, 1, NONE, unchanged, f"{name}: B {good + 3} frames on is too late")
+    # the longest inputs, left unanswered, still fit the budget on the last row
+    for move in (CONFUSION, WATER_GUN, EMBER):
+        turn(player_move=move, badges=BADGES[-1])
+    turn_landing(player_move=SUBMISSION, badges=BADGES[-1])
+
+    print("Pattern gating:")
+    r = turn(player_move=WATER_GUN, badges=BADGES[0], presses={0: ("a", 3), 1: ("b", 3)})
+    expect_scaled(r, 0, PERFECT, boosted, "no badges: Water Gun is a plain tap")
+    expect_scaled(r, 1, PERFECT, braced, "no badges: so is the brace against it")
+    late = RAMP[0][0] - 3
+    r = turn(player_move=CONFUSION, badges=BADGES[0], presses={0: ("a", late)})
+    expect_scaled(r, 0, PERFECT, boosted, f"no badges: Confusion taps, so {late} frames on is perfect")
+    r = turn(player_move=EMBER, badges=BADGES[1], presses={0: ("a", 3), 1: ("b", 3)})
+    expect_scaled(r, 0, PERFECT, boosted, "one badge: Ember is still a tap")
+    expect_scaled(r, 1, PERFECT, braced, "one badge: so is the brace against it")
+    snap = RAMP[1][0] - SNAP_PERFECT + 1
+    r = turn(player_move=CONFUSION, badges=BADGES[1], presses={0: ("a", snap)})
+    expect_scaled(r, 0, GOOD, boosted, f"one badge: Confusion snaps, so {snap} frames on is only good")
+
+    print("Feints:")
+    r = turn(foe={1: FEINT}, presses={1: ("b", "feint", 0, 3)})
+    check(1 in r.feinted, "the feint is shown before the cue to brace")
+    expect_scaled(r, 1, EARLY, unchanged, "B on the feint is locked out")
+    r = turn(foe={1: FEINT}, presses={1: ("b", 3)}, shot=prefix and f"{prefix}_feint")
+    check(1 in r.feinted, "the feint is shown again")
+    expect_scaled(r, 1, PERFECT, braced, "B on the real cue after a feint is perfect")
+
+    print("Trainer timing:")
+    r = turn(foe={0: TIMED, 1: TIMED}, presses={0: ("a", 19)})
+    expect_scaled(r, 0, GOOD, unchanged, "a good hit on a trainer that braced gets no bonus")
+    check(r.badge.get(0) == BADGE_FOE_BRACED, f"the badge says FOE BRACED ({r.badge.get(0)})")
+    expect_scaled(r, 1, NONE, boosted, "a timed attack left unbraced hits x1.5")
+    check(r.badge.get(1) == BADGE_FOE_GREAT, f"the badge says FOE GREAT ({r.badge.get(1)})")
+    r = turn(foe={0: TIMED, 1: TIMED}, presses={0: ("a", 3), 1: ("b", 3)})
+    expect_scaled(r, 0, PERFECT, boosted, "a perfect hit goes through a trainer's brace")
+    expect_scaled(r, 1, PERFECT, lambda d: braced(boosted(d)),
+                  "a perfect brace halves a timed attack")
+
+    # Rolled for real on the last row: half of a trainer's attacks, never a
+    # wild Pokemon's, and a feint only ever before the cue to brace.
+    def roll(turns, badges=BADGES[-1]):
+        timed, feinted = [0, 0], [0, 0]
+        for _ in range(turns):
+            r = turn(badges=badges)
+            for side in (0, 1):
+                timed[side] += bool(r.foe.get(side, 0) & TIMED)
+                feinted[side] += side in r.feinted
+        return timed, feinted
+
+    rec.trainer = True
+    timed, feinted = roll(16)
+    check(all(2 <= t <= 14 for t in timed), f"a trainer timed {timed} of 16 attacks each way")
+    rec.trainer = False
+    wild, wild_feints = roll(8)
+    check(wild == [0, 0], f"a wild Pokemon never times an attack ({wild})")
+    feints = [a + b for a, b in zip(feinted, wild_feints)]
+    check(feints[0] == 0 and feints[1] >= 1,
+          f"feints came before {feints[1]} of 24 braces and {feints[0]} attacks")
+    timed, feinted = roll(8, badges=BADGES[2])
+    check(feinted == [0, 0], f"no feints before five badges ({feinted})")
+
+    print("Streak:")
+    r = turn(streak=3, presses={0: ("a", 3), 1: ("b", 3)})
+    expect_scaled(r, 0, PERFECT, doubled, "a perfect hit after three in a row doubles")
+    check(r.badge.get(0) == BADGE_DOUBLE, f"the badge says PERFECT x2 ({r.badge.get(0)})")
+    streak = p.memory[at["wActionCommandStreak"]]
+    check(streak == 5, f"both presses add to the streak ({streak}, want 5)")
+    r = turn(streak=2, presses={0: ("a", 3)})
+    expect_scaled(r, 0, PERFECT, boosted, "two in a row is not yet a streak")
+    streak = p.memory[at["wActionCommandStreak"]]
+    check(streak == 0, f"an unanswered brace ends the streak ({streak})")
+
     print("Assist:")
     set_action_commands(p, at, "assist")
     r = turn(presses={0: ("a", 17), 1: ("b", 28)})
     expect_scaled(r, 0, PERFECT, boosted, "A 17 frames after the cue is still perfect")
     expect_scaled(r, 1, GOOD, braced, "B 28 frames after the cue is still good")
+
+    rec.trainer = True
+    timed, feinted = roll(6)
+    rec.trainer = False
+    check(timed == [0, 0] and feinted == [0, 0],
+          f"on the last row, Assist still has no timing ({timed}) or feints ({feinted})")
 
     print("Animations off:")
     set_action_commands(p, at, "on")

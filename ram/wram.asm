@@ -523,8 +523,10 @@ wActionCommandGood:: db
 ; the cue string on screen, 0 if none
 wActionCommandCue:: db
 wActionCommandForceEffect:: db
-
-	ds 2
+; ACTION_FOE_* flags for this attack
+wActionCommandFoe:: db
+; good or perfect results in a row this battle
+wActionCommandStreak:: db
 
 UNION
 ; the amount of damage accumulated by the enemy while biding

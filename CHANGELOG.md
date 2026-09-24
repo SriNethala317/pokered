@@ -5,7 +5,7 @@ build has sha1 `ea9bcae617fdf159b045185467ae58b2e4a48b9a`.
 
 ## Unreleased
 
-Integration build sha1 `de9336b50af2ce6bb7f725f937d9345d70f98158`.
+Integration build sha1 `fbf5219b12f3433b3a8727759e44faf4e26e425c`.
 
 ### Action commands
 
@@ -16,21 +16,22 @@ Integration build sha1 `de9336b50af2ce6bb7f725f937d9345d70f98158`.
 
   | Press | Your attack (A) | Their attack (B) |
   |---|---|---|
-  | Within 15 frames of the cue | PERFECT: x1.5 damage | COUNTER: x0.5 damage, and a quarter of the damage blocked is dealt back |
-  | Within 24 frames | GREAT: x1.5 damage | BRACED: x0.5 damage |
+  | Within the perfect window | PERFECT: x1.5 damage | COUNTER: x0.5 damage, and a quarter of the damage blocked is dealt back |
+  | Within the good window | GREAT: x1.5 damage | BRACED: x0.5 damage |
   | Too late, or not at all | normal damage | normal damage |
   | Before the cue, or the wrong button | TOO SOON: normal damage | TOO SOON: normal damage |
 
   The cue comes a random 4 to 11 frames after the move starts, so it cannot be
   learned as a fixed beat, and pressing early locks you out for that attack so
-  mashing never pays. A counter can never knock the attacker out; it stops at
+  mashing never pays. How wide the windows are depends on your badges (see the
+  difficulty ramp below). A counter can never knock the attacker out; it stops at
   1 HP. The result is shown as a badge for one second instead of a message, so
   nothing waits for a button.
 
   **Battles do not get longer.** The window runs during the animation that was
   already playing. If an animation finishes first, the window is held open for
-  at most 20 frames; across the test's 68 staged attacks the most it ever added
-  was 10. With battle animations off, it runs inside the existing half-second
+  at most 20 frames; across the test's 205 staged attacks, at every badge
+  count, the most it ever added was 13. With battle animations off, it runs inside the existing half-second
   pause.
 
   The bonus is applied once per attack, just before the damage is dealt, so
@@ -38,8 +39,44 @@ Integration build sha1 `de9336b50af2ce6bb7f725f937d9345d70f98158`.
   that deal fixed damage or knock out outright are left alone. Link battles
   never use it.
 
-  Not done yet: there is no difficulty ramp by badge count, no feints, and
-  trainers do not time their own attacks. Those come next.
+- **Easy at the start, hard toward the end.** Your badge count picks one row
+  of a single table (`ActionRamp` in `engine/battle/action_commands.asm`):
+
+  | Badges | Perfect / good window | Inputs in use | Trainers time an attack | Feints before a brace |
+  |---|---|---|---|---|
+  | 0 | 18 / 30 frames | Tap only: every type taps | never | never |
+  | 1-2 | 16 / 26 | Tap, Snap, Rapid | 10% | never |
+  | 3-4 | 15 / 24 | all five | 20% | never |
+  | 5-6 | 14 / 21 | all five | 35% | 1 in 6 |
+  | 7-8 | 13 / 19 | all five | 50% | 1 in 4 |
+
+  A type whose input is not in use yet taps instead. Even the last row stays
+  within human reaction time, so most of the extra difficulty comes from the
+  inputs, the feints and the trainers rather than from windows too short to
+  hit.
+
+- **Trainers time their attacks too.** In trainer battles only (never against
+  wild Pokemon), each attack rolls against the row's chance. Gym leaders,
+  Giovanni, your rival and the Elite Four get an extra 15%.
+  - On their attack, a timed hit does x1.5 (FOE GREAT). Bracing still halves
+    it, so a perfect brace brings it back to about x0.75.
+  - On your attack, a trainer that times it braces: a GOOD hit gets no bonus
+    (FOE BRACED). A PERFECT hit goes through as usual.
+
+  A trainer's timing only ever adds to their damage or takes away your bonus,
+  so battles never get longer than vanilla because of it.
+
+- **Feints.** From 5 badges, the cue to brace can be faked. A `B?` shows first,
+  and the real `B!` follows 6 to 9 frames later. Pressing on the feint is TOO
+  SOON. Feints never come before your own attacks or a Hold.
+
+- **Streaks.** Every GOOD or PERFECT, attacking or bracing, adds to a streak for
+  the battle. Anything else resets it. With 3 or more in a row, a PERFECT
+  attack does x2 instead of x1.5 (PERFECT×2).
+
+- **Oak explains it once.** At the start of the rival battle in Oak's lab, one
+  text box says what the cues mean. It never shows again, and it is skipped
+  when the option is Off.
 
 - **The move's type picks the input.** Each type has its own pattern, so the
   same press is not asked for every turn:
@@ -47,7 +84,7 @@ Integration build sha1 `de9336b50af2ce6bb7f725f937d9345d70f98158`.
   | Pattern | Types | Cue | Input |
   |---|---|---|---|
   | Tap | Normal, Flying, Bug, Ghost, Dragon | `A!` | one press |
-  | Snap | Electric, Psychic | `A!!` | one press in half the time: 7 frames for perfect, 12 for good |
+  | Snap | Electric, Psychic | `A!!` | one press in less time: 3 frames off the perfect window and 6 off the good one |
   | Hold | Water, Ice | `HOLD A`, then `LET GO!` | hold the button once HOLD shows, and let go on the cue. Letting go early is TOO SOON; not holding when the cue comes does nothing |
   | Rapid | Fighting, Rock, Ground | `A×3`, counting down | three presses; judged on the third, with 12 extra frames to fit them |
   | Double | Fire, Grass, Poison | `A!`, then `   A!` | a press on each of two cues 6 to 9 frames apart; the result is the worse of the two, and missing the second loses the first |
@@ -80,7 +117,8 @@ Integration build sha1 `de9336b50af2ce6bb7f725f937d9345d70f98158`.
 
 - **An Action Commands option: On, Assist or Off.** It lives in two unused bits
   of the saved options byte. On is the default, including for existing saves.
-  Assist widens the window to 20 and 32 frames. Off turns it off entirely, with
+  Assist widens the window to 20 and 32 frames at every badge count, and turns
+  off trainer timing and feints; the inputs still unlock as usual. Off turns it off entirely, with
   no windows and vanilla damage. The Options screen has no row for it yet; that
   is a later step, and until then the setting cannot be changed in game. The
   screen now keeps these bits when it saves, and the text speed code masks them
@@ -238,7 +276,16 @@ New checks under `test/`, all run against each build:
   with the wrong button, a counter against a 1 HP attacker, Doubleslap not
   compounding the bonus, Assist, animations off, and Off never arming. It also
   enforces the battle-length budget: it counts the frames each window adds to
-  every attack and fails above 20. `splitcheck.py`, `trapcheck.py` and
+  every attack and fails above 20. It writes `wObtainedBadges` before each turn:
+  the pattern checks use three badges, and a ramp section walks every row,
+  checking its perfect, good and too-late timings and that the longest inputs
+  still fit the budget. It also checks that inputs not yet in use tap; that a
+  press on a feint is TOO SOON and a press on the real cue after one is
+  perfect; FOE GREAT and FOE BRACED with a trainer's timing forced on; the real
+  roll (by making the battle look like a trainer battle only while the attack
+  is armed: about half of 16 attacks timed on the last row, never against a
+  wild Pokemon, no feints before five badges, none with Assist); and the
+  streak doubling a perfect hit. `splitcheck.py`, `trapcheck.py` and
   `statuscheck.py` now turn action commands off, because they press A to
   advance text and measure damage, and a press that landed in a window would
   scale it. `battle.py` leaves them on, so it now plays a full battle with the
@@ -247,8 +294,8 @@ New checks under `test/`, all run against each build:
   input, for reading the ROM through the linker's own symbol names, and for
   dropping straight into the debug build's test battle.
 
-Current headroom: ROM0 118 bytes free (-20), ROMX 176,370 free (+15,273:
-bank $2D, previously unused, now holds the new combat code and has 15,340
+Current headroom: ROM0 118 bytes free (-20), ROMX 175,889 free (+14,190:
+bank $2D, previously unused, now holds the new combat code and has 14,984
 bytes left of its 16,384), WRAM0 30 free (unchanged), HRAM 0 free (unchanged),
 SRAM 7,646 free (unchanged). No change in this release consumes any RAM: the
 action command state lives in padding that was already there.

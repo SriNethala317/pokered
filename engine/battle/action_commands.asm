@@ -9,6 +9,8 @@
 ;
 ; The move's type picks the input (ActionPatterns), and its power sets the
 ; tempo: stronger moves take longer to wind up and are harder to land perfectly.
+; The badge count sets everything else (ActionRamp): the windows, which inputs
+; are asked for, how often a trainer times its own attacks, and feints.
 
 DEF ACTION_LEAD_IN_MIN     EQU 4  ; frames from arming to the cue, plus 0-7 random
 DEF ACTION_HOLD_LEAD_IN    EQU 16 ; extra time to see HOLD and press before the cue
@@ -17,12 +19,24 @@ DEF ACTION_RAPID_PRESSES   EQU 3
 DEF ACTION_RAPID_EXTRA     EQU 12 ; extra frames to fit the presses of a rapid pattern
 DEF ACTION_HEAVY_POWER     EQU 100 ; moves this strong have a tighter perfect window
 DEF ACTION_HEAVY_PENALTY   EQU 2
+DEF ACTION_SNAP_PERFECT    EQU 3  ; frames a snap takes off each window
+DEF ACTION_SNAP_GOOD       EQU 6
+DEF ACTION_FEINT_GAP       EQU 6  ; frames from a feint to the real cue, plus 0-3
+DEF ACTION_BOSS_BONUS      EQU 15 percent ; added to a boss's chance to time an attack
+DEF ACTION_STREAK_DOUBLE   EQU 3  ; landed in a row before a perfect attack doubles
 DEF ACTION_MAX_EXTRA       EQU 20 ; most frames a window may add to an attack
 DEF ACTION_BADGE_FRAMES    EQU 60
-DEF ACTION_PERFECT_ON      EQU 15 ; frames after the cue, exclusive
-DEF ACTION_GOOD_ON         EQU 24
-DEF ACTION_PERFECT_ASSIST  EQU 20
+DEF ACTION_PERFECT_ASSIST  EQU 20 ; frames after the cue, exclusive
 DEF ACTION_GOOD_ASSIST     EQU 32
+
+; a row of ActionRamp
+	rsreset
+DEF ACTION_RAMP_PERFECT  rb ; frames after the cue, exclusive
+DEF ACTION_RAMP_GOOD     rb
+DEF ACTION_RAMP_PATTERNS rb ; 1 << ACTION_PATTERN_* for each input in use
+DEF ACTION_RAMP_FOE      rb ; chance a trainer times its attack
+DEF ACTION_RAMP_FEINT    rb ; chance of a feint before a cue to brace
+DEF ACTION_RAMP_WIDTH    EQU _RS
 
 ; stands for the button to press, A or B, in the cue strings
 DEF ACTION_BUTTON_CHAR     EQU '<NULL>'
@@ -34,6 +48,9 @@ DEF ACTION_BUTTON_CHAR     EQU '<NULL>'
 	const ACTION_BADGE_PERFECT ; 3
 	const ACTION_BADGE_BRACED  ; 4
 	const ACTION_BADGE_COUNTER ; 5
+	const ACTION_BADGE_DOUBLE  ; 6
+	const ACTION_BADGE_FOE_GREAT  ; 7
+	const ACTION_BADGE_FOE_BRACED ; 8
 
 ; wActionCommandCue
 	const_def 1
@@ -45,6 +62,7 @@ DEF ACTION_BUTTON_CHAR     EQU '<NULL>'
 	const ACTION_CUE_RAPID_2 ; 6
 	const ACTION_CUE_RAPID_1 ; 7
 	const ACTION_CUE_SECOND  ; 8
+	const ACTION_CUE_FEINT   ; 9
 
 ArmActionCommand:
 	xor a
@@ -97,7 +115,27 @@ ArmActionCommand:
 	ld hl, ActionPatterns
 	ld b, 0
 	add hl, bc
+	ld c, [hl]
+	call GetActionRamp
+	push hl
+
+; the type's pattern, once enough badges have brought it in
+	ld de, ACTION_RAMP_PATTERNS
+	add hl, de
 	ld a, [hl]
+	ld b, c
+	inc b
+.patternBit
+	dec b
+	jr z, .gotPatternBit
+	rrca
+	jr .patternBit
+.gotPatternBit
+	rrca
+	ld a, c
+	jr c, .gotPattern
+	ld a, ACTION_PATTERN_TAP
+.gotPattern
 	ld [wActionCommandPattern], a
 	cp ACTION_PATTERN_RAPID
 	jr nz, .gotStep
@@ -106,9 +144,19 @@ ArmActionCommand:
 .gotStep
 
 ; the windows: tighter for heavy moves and snaps, longer for rapid presses
-	call GetActionWindow
+	pop hl
+	push hl
+	ld a, [hli]
+	ld d, a
+	ld e, [hl]
+	call IsActionAssist
+	jr nz, .gotBaseWindow
+	lb de, ACTION_PERFECT_ASSIST, ACTION_GOOD_ASSIST
+.gotBaseWindow
+	pop hl
 	pop bc
 	push bc
+	push hl
 	ld a, b
 	cp ACTION_HEAVY_POWER
 	jr c, .notHeavy
@@ -119,8 +167,13 @@ ArmActionCommand:
 	ld a, [wActionCommandPattern]
 	cp ACTION_PATTERN_SNAP
 	jr nz, .notSnap
-	srl d
-	srl e
+	ld a, d
+	sub ACTION_SNAP_PERFECT
+	ld d, a
+	ld a, e
+	sub ACTION_SNAP_GOOD
+	ld e, a
+	ld a, [wActionCommandPattern]
 .notSnap
 	cp ACTION_PATTERN_RAPID
 	jr nz, .gotWindow
@@ -135,6 +188,13 @@ ArmActionCommand:
 	ld [wActionCommandPerfect], a
 	ld a, e
 	ld [wActionCommandGood], a
+
+; what the other side does: Assist keeps it all off
+	pop hl
+	xor a
+	ld [wActionCommandFoe], a
+	call IsActionAssist
+	call nz, RollActionFoe
 
 ; the lead-in: a frame more for every 32 power, so big moves wind up
 	pop bc
@@ -230,6 +290,20 @@ ActionCommandTick::
 	ld hl, wActionCommandTimer
 	dec [hl]
 	ret nz
+	ld hl, wActionCommandFoe
+	bit ACTION_FOE_FEINT, [hl]
+	jr z, .realCue
+	; a silent false cue; pressing on it is pressing before the cue
+	res ACTION_FOE_FEINT, [hl]
+	ld a, ACTION_CUE_FEINT
+	call ShowActionCue
+	call Random
+	and %11
+	add ACTION_FEINT_GAP
+	ld [wActionCommandTimer], a
+	ret
+
+.realCue
 	ld a, [wActionCommandPattern]
 	cp ACTION_PATTERN_HOLD
 	jr nz, .openWindow
@@ -367,7 +441,8 @@ FinishActionCommand:
 
 ; Called just before the attack is applied. Scales wDamage by the result and
 ; shows the result badge. A perfect attack also makes sure of the move's
-; secondary effect, and a perfect brace shrugs it off.
+; secondary effect, and a perfect brace shrugs it off. A trainer that timed its
+; attack hits harder, and one that braced cancels a good hit's bonus.
 ApplyActionCommand:
 	ld a, [wActionCommandState]
 	and a
@@ -375,39 +450,62 @@ ApplyActionCommand:
 	cp ACTION_COMMAND_BADGE
 	ret z
 	call ClearActionCue
-	ld a, [wActionCommandResult]
-	cp ACTION_RESULT_GOOD
-	jp c, .showBadge
-	cp ACTION_RESULT_PERFECT
-	jr nz, .scale
-	ldh a, [hWhoseTurn]
-	inc a ; ACTION_EFFECT_FORCED on your attack, ACTION_EFFECT_BLOCKED on theirs
-	ld [wActionCommandForceEffect], a
-.scale
+	call CountActionStreak
 	ldh a, [hWhoseTurn]
 	and a
-	jr nz, .brace
-; your attack: damage x1.5
+	jr nz, .theirAttack
+
+; your attack
+	ld a, [wActionCommandResult]
+	cp ACTION_RESULT_PERFECT
+	jr z, .perfectAttack
+	cp ACTION_RESULT_GOOD
+	jp nz, .showBadge ; ACTION_BADGE_EARLY, or nothing to show
+	ld hl, wActionCommandFoe
+	bit ACTION_FOE_TIMED, [hl]
+	ld a, ACTION_BADGE_FOE_BRACED
+	jp nz, .showBadge
+	call BoostDamage
+	ld a, ACTION_BADGE_GREAT
+	jp .showBadge
+
+.perfectAttack
+	ld a, ACTION_EFFECT_FORCED
+	ld [wActionCommandForceEffect], a
+	ld a, b
+	cp ACTION_STREAK_DOUBLE
+	jr nc, .doubleDamage
+	call BoostDamage
+	ld a, ACTION_BADGE_PERFECT
+	jp .showBadge
+
+.doubleDamage
 	ld hl, wDamage
 	ld a, [hli]
-	ld d, a
-	ld e, [hl]
-	ld h, d
-	ld l, e
-	srl d
-	rr e
-	add hl, de
-	jr nc, .storeAttack
-	ld hl, $ffff
-.storeAttack
-	ld a, h
-	ld [wDamage], a
-	ld a, l
-	ld [wDamage + 1], a
-	ld a, [wActionCommandResult]
+	ld l, [hl]
+	ld h, a
+	add hl, hl
+	call StoreActionDamage
+	ld a, ACTION_BADGE_DOUBLE
 	jr .showBadge
 
-; enemy attack: damage x0.5, and a perfect brace hits back
+.theirAttack
+	ld a, [wActionCommandFoe]
+	bit ACTION_FOE_TIMED, a
+	call nz, BoostDamage
+	ld a, [wActionCommandResult]
+	cp ACTION_RESULT_GOOD
+	jr nc, .brace
+	and a
+	jr nz, .showBadge ; ACTION_BADGE_EARLY
+	ld a, [wActionCommandFoe]
+	bit ACTION_FOE_TIMED, a
+	ld a, 0
+	jr z, .showBadge
+	ld a, ACTION_BADGE_FOE_GREAT
+	jr .showBadge
+
+; damage x0.5, and a perfect brace hits back
 .brace
 	ld hl, wDamage
 	ld a, [hli]
@@ -429,6 +527,8 @@ ApplyActionCommand:
 	ld a, [wActionCommandResult]
 	cp ACTION_RESULT_PERFECT
 	jr nz, .braceBadge
+	ld a, ACTION_EFFECT_BLOCKED
+	ld [wActionCommandForceEffect], a
 ; counter: a quarter of the damage blocked, at least 1, never a knockout
 	ld a, c
 	sub e
@@ -469,7 +569,7 @@ ApplyActionCommand:
 	add ACTION_BADGE_BRACED - ACTION_RESULT_GOOD
 .showBadge
 	and a
-	jr z, .done ; no press: nothing to show
+	jr z, .done ; nothing to show
 	ld [wActionCommandResult], a
 	call GetActionBadgeString
 	call PlaceActionString
@@ -480,14 +580,115 @@ ApplyActionCommand:
 	ld [wActionCommandState], a
 	ret
 
-; d = frames for a perfect press, e = frames for a good one
-GetActionWindow:
+; b = good or perfect results in a row before this one; then count this one
+CountActionStreak:
+	ld hl, wActionCommandStreak
+	ld b, [hl]
+	ld a, [wActionCommandResult]
+	cp ACTION_RESULT_GOOD
+	jr nc, .landed
+	ld [hl], 0
+	ret
+.landed
+	inc [hl]
+	ret nz
+	dec [hl] ; stays at 255
+	ret
+
+; wDamage x1.5
+BoostDamage:
+	ld hl, wDamage
+	ld a, [hli]
+	ld d, a
+	ld e, [hl]
+	ld h, d
+	ld l, e
+	srl d
+	rr e
+	add hl, de
+	; fallthrough
+
+; wDamage = hl, or $ffff if the last add carried
+StoreActionDamage:
+	jr nc, .store
+	ld hl, $ffff
+.store
+	ld a, h
+	ld [wDamage], a
+	ld a, l
+	ld [wDamage + 1], a
+	ret
+
+; hl = the row of ActionRamp for the badges you have: easy at first, hard at
+; the end. Rows cover 0, 1-2, 3-4, 5-6 and 7-8 badges.
+GetActionRamp:
+	push bc
+	ld hl, wObtainedBadges
+	ld b, 1
+	call CountSetBits
+	inc a
+	srl a
+	ld hl, ActionRamp
+	ld bc, ACTION_RAMP_WIDTH
+	call AddNTimes
+	pop bc
+	ret
+
+; nz unless the option is Assist
+IsActionAssist:
 	ld a, [wOptions]
 	and ACTION_COMMANDS_MASK
 	cp ACTION_COMMANDS_ASSIST
-	lb de, ACTION_PERFECT_ON, ACTION_GOOD_ON
-	ret nz
-	lb de, ACTION_PERFECT_ASSIST, ACTION_GOOD_ASSIST
+	ret
+
+; Roll for a trainer timing this attack, and for a feint before a cue to brace.
+; hl = the row of ActionRamp
+RollActionFoe:
+	push hl
+	ld de, ACTION_RAMP_FOE
+	add hl, de
+	ld a, [wIsInBattle]
+	cp 2 ; trainer battles only
+	jr nz, .feint
+	ld b, [hl]
+	ld a, b
+	and a
+	jr z, .feint ; not yet
+	push hl
+	push bc
+	ld a, [wTrainerClass]
+	ld hl, ActionBossClasses
+	ld de, 1
+	call IsInArray ; clobbers b
+	pop bc
+	pop hl
+	jr nc, .gotChance
+	ld a, b
+	add ACTION_BOSS_BONUS
+	ld b, a
+.gotChance
+	call Random
+	cp b
+	jr nc, .feint
+	ld a, [wActionCommandFoe]
+	set ACTION_FOE_TIMED, a
+	ld [wActionCommandFoe], a
+.feint
+	pop hl
+	ldh a, [hWhoseTurn]
+	and a
+	ret z ; only the cue to brace can be faked
+	ld a, [wActionCommandPattern]
+	cp ACTION_PATTERN_HOLD
+	ret z ; its cue is letting go of the button already held
+	ld de, ACTION_RAMP_FEINT
+	add hl, de
+	call Random
+	cp [hl]
+	ret nc
+	ld a, [wActionCommandFoe]
+	set ACTION_FOE_FEINT, a
+	ld [wActionCommandFoe], a
 	ret
 
 ; a = PAD_A on your attack, PAD_B on theirs
@@ -666,6 +867,29 @@ GetActionString:
 	ld d, [hl]
 	ret
 
+; windows, inputs in use, and the chances of a trainer timing its attack and
+; of a feint, by badges
+ActionRamp:
+	table_width ACTION_RAMP_WIDTH
+	; 0 badges: tap only, generous windows
+	db 18, 30, 1 << ACTION_PATTERN_TAP, 0, 0
+	; 1-2: snaps and rapid presses, and trainers start timing their attacks
+	db 16, 26, (1 << ACTION_PATTERN_TAP) | (1 << ACTION_PATTERN_SNAP) | (1 << ACTION_PATTERN_RAPID), 10 percent, 0
+	; 3-4: every input
+	db 15, 24, (1 << (ACTION_PATTERN_DOUBLE + 1)) - 1, 20 percent, 0
+	; 5-6: feints
+	db 14, 21, (1 << (ACTION_PATTERN_DOUBLE + 1)) - 1, 35 percent, 17 percent
+	; 7-8
+	db 13, 19, (1 << (ACTION_PATTERN_DOUBLE + 1)) - 1, 50 percent, 25 percent
+	assert_table_length 5
+
+; gym leaders, the rival and the Elite Four time their attacks more often
+ActionBossClasses:
+	db RIVAL1, RIVAL2, RIVAL3, GIOVANNI
+	db BROCK, MISTY, LT_SURGE, ERIKA, KOGA, BLAINE, SABRINA
+	db LORELEI, BRUNO, AGATHA, LANCE
+	db -1 ; end
+
 ; the input each move type asks for
 ActionPatterns:
 	table_width 1
@@ -708,6 +932,7 @@ ActionCueStrings:
 	dw .rapid2
 	dw .rapid1
 	dw .second
+	dw .feint
 
 .tap    db ACTION_BUTTON_CHAR, "!@"
 .snap   db ACTION_BUTTON_CHAR, "!!@"
@@ -717,6 +942,7 @@ ActionCueStrings:
 .rapid2 db ACTION_BUTTON_CHAR, "×2@"
 .rapid1 db ACTION_BUTTON_CHAR, "×1@"
 .second db "   ", ACTION_BUTTON_CHAR, "!@"
+.feint  db ACTION_BUTTON_CHAR, "?@"
 
 ActionBadgeStrings:
 ; entries correspond to ACTION_BADGE_* constants
@@ -725,9 +951,15 @@ ActionBadgeStrings:
 	dw .perfect
 	dw .braced
 	dw .counter
+	dw .double
+	dw .foeGreat
+	dw .foeBraced
 
 .early   db "TOO SOON@"
 .great   db "GREAT!@"
 .perfect db "PERFECT!@"
 .braced  db "BRACED!@"
 .counter db "COUNTER!@"
+.double  db "PERFECT×2@"
+.foeGreat  db "FOE GREAT@"
+.foeBraced db "FOE BRACED@"

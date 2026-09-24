@@ -27,6 +27,18 @@ PrintBeginningBattleText:
 	callfar DrawAllPokeballs
 	pop hl
 	call PrintText
+	; Oak explains action commands once, at the rival battle in his lab
+	ld a, [wIsInBattle]
+	dec a
+	jr z, .done
+	CheckEvent EVENT_BATTLED_RIVAL_IN_OAKS_LAB
+	jr nz, .done
+	ld a, [wOptions]
+	and ACTION_COMMANDS_MASK
+	cp ACTION_COMMANDS_OFF
+	jr nc, .done
+	ld hl, ActionCommandTutorialText
+	call PrintText
 	jr .done
 .pokemonTower
 	ld b, SILPH_SCOPE
@@ -72,6 +84,10 @@ PrintBeginningBattleText:
 
 WildMonAppearedText:
 	text_far _WildMonAppearedText
+	text_end
+
+ActionCommandTutorialText:
+	text_far _ActionCommandTutorialText
 	text_end
 
 HookedMonAttackedText:

@@ -1241,6 +1241,16 @@ _WildMonAppearedText::
 	line "appeared!"
 	prompt
 
+_ActionCommandTutorialText::
+	text "OAK: Watch for a"
+	line "cue as #MON"
+	cont "attack!"
+
+	para "On A!, press A to"
+	line "hit harder. On B!"
+	cont "press B to brace!"
+	prompt
+
 _HookedMonAttackedText::
 	text "The hooked"
 	line "@"
