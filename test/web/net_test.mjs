@@ -35,6 +35,8 @@ assert.equal(decodePos(bad, false), null);
 assert.deepEqual(decodeLink(encodeLink(77, [0x101, 0x2fe])), { sid: 77, records: [0x101, 0x2fe] });
 assert.equal(decodeLink(new Uint8Array([1, 0, 0, 0, 3, 0])), null);
 assert.equal(decodeLink(new Uint8Array(4 + 65 * 2)), null);
+assert.deepEqual(decodeLink(encodeLink(5, [])), { sid: 5, records: [] });
+assert.equal(decodeLink(new Uint8Array(3)), null);
 {
   let t = 0;
   const r = new RateLimiter(2, 3, () => t);

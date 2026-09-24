@@ -26,7 +26,7 @@ export class Emulator {
     this.running = false;
     this.acc = 0;
     this.last = 0;
-    this.listeners = { frame: [], stall: [] };
+    this.listeners = { frame: [], stall: [], draw: [] };
     this.audio = null;
     this.audioBuf = M._malloc(4096 * 4);
     this.scratch = M._malloc(64);
@@ -92,6 +92,9 @@ export class Emulator {
   linkPlug(on) {
     this.M._shim_link_plug(this.s, on ? 1 : 0);
   }
+  linkGate(addr, value) {
+    this.M._shim_link_gate(this.s, addr, value);
+  }
   linkPop() {
     const out = [];
     for (;;) {
@@ -148,6 +151,7 @@ export class Emulator {
     const fb = this.M._shim_framebuffer(this.s);
     this.image.data.set(this.M.HEAPU8.subarray(fb, fb + 160 * 144 * 4));
     this.ctx.putImageData(this.image, 0, 0);
+    for (const f of this.listeners.draw) f();
   }
 
   step() {

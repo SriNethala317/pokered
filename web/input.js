@@ -66,7 +66,9 @@ export function setupInput({ dpad, buttons, onChange, isTyping }) {
   const track = (el, maskOf) => {
     el.addEventListener("pointerdown", (e) => {
       e.preventDefault();
-      el.setPointerCapture?.(e.pointerId);
+      try {
+        el.setPointerCapture(e.pointerId); // keep tracking if the finger slides off
+      } catch {}
       pointers.set(e.pointerId, maskOf(e));
       navigator.vibrate?.(8);
       emit();

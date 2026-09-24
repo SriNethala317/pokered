@@ -406,7 +406,7 @@ export class Net {
     const p = this.gate(peerId, "link");
     if (!p) return;
     const b = data instanceof Uint8Array ? data : data instanceof ArrayBuffer ? new Uint8Array(data) : null;
-    if (!b || b.length < 7) return this.strike(peerId, "linkR");
+    if (!b || b.length < 5) return this.strike(peerId, "linkR");
     const slot = b[0];
     const inner = b.subarray(1);
     const pkt = decodeLink(inner);

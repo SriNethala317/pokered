@@ -151,7 +151,7 @@ export function decodePos(data, fromHost) {
 
 // ---- link bytes (binary) ----
 // [sid (4 bytes LE), then up to 64 records of (kind, byte)]. Kinds are 1
-// (XFER) and 2 (REPLY) only.
+// (XFER) and 2 (REPLY) only. No records = a heartbeat.
 export const LINK_MAX_RECORDS = 64;
 
 export function encodeLink(sid, records) {
@@ -169,7 +169,7 @@ export function encodeLink(sid, records) {
 
 export function decodeLink(data) {
   const b = bytesOf(data);
-  if (!b || b.length < 6 || b.length % 2 || (b.length - 4) / 2 > LINK_MAX_RECORDS) return null;
+  if (!b || b.length < 4 || b.length % 2 || (b.length - 4) / 2 > LINK_MAX_RECORDS) return null;
   const sid = (b[0] | (b[1] << 8) | (b[2] << 16) | (b[3] << 24)) >>> 0;
   const records = [];
   for (let i = 4; i < b.length; i += 2) {
