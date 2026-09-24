@@ -3139,6 +3139,9 @@ PlayerCalcMoveDamage:
 	               ; for these moves, accuracy tests will only occur if they are called as part of the effect itself
 	call AdjustDamageForMoveType
 	call RandomizeDamage
+	call MoveHitTest
+	callfar ArmActionCommand ; only a fresh damage calculation opens a window
+	jr HandleIfPlayerMoveMissed
 .moveHitTest
 	call MoveHitTest
 HandleIfPlayerMoveMissed:
@@ -3217,6 +3220,7 @@ MirrorMoveCheck:
 	jr z, .notDone
 	jp ExecutePlayerMoveDone ; otherwise, we're done if the move missed
 .moveDidNotMiss
+	callfar ApplyActionCommand
 	call ApplyAttackToEnemyPokemon
 	call PrintCriticalOHKOText
 	callfar DisplayEffectiveness
@@ -5722,6 +5726,9 @@ EnemyCalcMoveDamage:
 	jp z, EnemyCheckIfFlyOrChargeEffect
 	call AdjustDamageForMoveType
 	call RandomizeDamage
+	call MoveHitTest
+	callfar ArmActionCommand ; only a fresh damage calculation opens a window
+	jr HandleIfEnemyMoveMissed
 
 EnemyMoveHitTest:
 	call MoveHitTest
@@ -5808,6 +5815,7 @@ EnemyCheckIfMirrorMoveEffect:
 	jr z, .handleExplosionMiss
 	jp ExecuteEnemyMoveDone
 .moveDidNotMiss
+	callfar ApplyActionCommand
 	call ApplyAttackToPlayerPokemon
 	call PrintCriticalOHKOText
 	callfar DisplayEffectiveness

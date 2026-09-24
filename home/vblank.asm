@@ -102,4 +102,15 @@ DEF NOT_VBLANKED EQU 1
 	ldh a, [hVBlankOccurred]
 	and a
 	jr nz, .halt
+	ld a, [wActionCommandState]
+	and a
+	ret z
+	push bc
+	push de
+	push hl
+	callfar ActionCommandTick
+	pop hl
+	pop de
+	pop bc
+	xor a
 	ret

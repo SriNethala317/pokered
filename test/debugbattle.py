@@ -6,7 +6,7 @@ much better door: holding SELECT as the title screen hands off opens a debug
 menu whose first entry starts a level 20 Rhydon mirror match. The battle code
 is identical between the release and debug builds -- only the entry differs.
 
-Shared by test/battle.py and test/splitcheck.py.
+Shared by the battle checks under test/.
 """
 from pyboy import PyBoy
 
@@ -42,7 +42,14 @@ WANTED = (
     "wPartyCount",
     "wTopMenuItemY",
     "wMaxMenuItem",
+    "wOptions",
+    "wActionCommandState",
+    "wActionCommandResult",
 )
+
+# wOptions bits 4-5, see constants/ram_constants.asm
+ACTION_COMMANDS_MASK = 0b110000
+ACTION_COMMANDS = {"on": 0b000000, "assist": 0b010000, "off": 0b100000}
 
 
 class NotReached(Exception):
@@ -65,6 +72,12 @@ def tap(p, button, hold=4, release=8):
     p.button_release(button)
     for _ in range(release):
         p.tick()
+
+
+def set_action_commands(p, at, mode):
+    """Switch the timed-press option. Read when each attack is armed."""
+    options = p.memory[at["wOptions"]] & ~ACTION_COMMANDS_MASK
+    p.memory[at["wOptions"]] = options | ACTION_COMMANDS[mode]
 
 
 def boot_to_debug_menu(rom_path, sym_path):
@@ -101,8 +114,12 @@ def boot_to_debug_menu(rom_path, sym_path):
     return p, at
 
 
-def enter(rom_path, sym_path):
-    """Boot the debug ROM and return (pyboy, addresses) inside a live battle."""
+def enter(rom_path, sym_path, action_commands="off"):
+    """Boot the debug ROM and return (pyboy, addresses) inside a live battle.
+
+    Action commands default to off: most checks measure damage while pressing
+    A, and a press that happened to land in the window would scale it.
+    """
     p, at = boot_to_debug_menu(rom_path, sym_path)
 
     # FIGHT is the first entry and the cursor starts on it. TestBattle builds
@@ -134,4 +151,5 @@ def enter(rom_path, sym_path):
         p.stop(save=False)
         raise NotReached("battle started but the player's Pokemon never loaded")
 
+    set_action_commands(p, at, action_commands)
     return p, at

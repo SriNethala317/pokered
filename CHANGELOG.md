@@ -5,7 +5,51 @@ build has sha1 `ea9bcae617fdf159b045185467ae58b2e4a48b9a`.
 
 ## Unreleased
 
-Integration build sha1 `12c5666d59843b83594a294667e63b7e5d69d39c`.
+Integration build sha1 `b73317ff91c8c94ea403981f2f03aa9e4616dfb1`.
+
+### Action commands
+
+- **Every damaging move now has a timing window.** While a move's animation
+  plays, a cue appears under the opponent's HP box: "A!" when you are
+  attacking, "B!" when you are being hit. Pressing the right button in time
+  changes the damage:
+
+  | Press | Your attack (A) | Their attack (B) |
+  |---|---|---|
+  | Within 15 frames of the cue | PERFECT: x1.5 damage | COUNTER: x0.5 damage, and a quarter of the damage blocked is dealt back |
+  | Within 24 frames | GREAT: x1.5 damage | BRACED: x0.5 damage |
+  | Too late, or not at all | normal damage | normal damage |
+  | Before the cue, or the wrong button | TOO SOON: normal damage | TOO SOON: normal damage |
+
+  The cue comes a random 4 to 11 frames after the move starts, so it cannot be
+  learned as a fixed beat, and pressing early locks you out for that attack so
+  mashing never pays. A counter can never knock the attacker out; it stops at
+  1 HP. The result is shown as a badge for one second instead of a message, so
+  nothing waits for a button.
+
+  **Battles do not get longer.** The window runs during the animation that was
+  already playing. If an animation finishes first, the window is held open for
+  at most 20 frames; across the test's 21 staged attacks the most it ever added
+  was 6. With battle animations off, it runs inside the existing half-second
+  pause.
+
+  The bonus is applied once per attack, just before the damage is dealt, so
+  multi-hit moves reuse it on every hit rather than compounding it, and moves
+  that deal fixed damage or knock out outright are left alone. Link battles
+  never use it.
+
+  This is the first step of the brief's Action Commands. A move's type does not
+  change the input yet, there is no difficulty ramp by badge count, a perfect
+  attack does not yet guarantee a secondary effect, and trainers do not time
+  their own attacks. Those come next.
+
+- **An Action Commands option: On, Assist or Off.** It lives in two unused bits
+  of the saved options byte. On is the default, including for existing saves.
+  Assist widens the window to 20 and 32 frames. Off turns it off entirely, with
+  no windows and vanilla damage. The Options screen has no row for it yet; that
+  is a later step, and until then the setting cannot be changed in game. The
+  screen now keeps these bits when it saves, and the text speed code masks them
+  out: before this, setting either bit would have broken text speed.
 
 ### Battle mechanics
 
@@ -149,10 +193,24 @@ New checks under `test/`, all run against each build:
   swapped or unscaled SPA/SPD row fails. It then checks the level-up stats box
   through both of its callers: winning a battle one experience point short of a
   level, and using a Rare Candy from the debug new game's bag.
+- `actioncheck.py` - stages turns in the debug battle where both sides use
+  Pound, and presses A or B at exact frames after the cue. It hooks the engine
+  to read the damage just before and just after the bonus, so the x1.5, x0.5
+  and counter amounts are checked exactly. Also covers pressing late, early and
+  with the wrong button, a counter against a 1 HP attacker, Doubleslap not
+  compounding the bonus, Assist, animations off, and Off never arming. It also
+  enforces the battle-length budget: it counts the frames each window adds to
+  every attack and fails above 20. `splitcheck.py`, `trapcheck.py` and
+  `statuscheck.py` now turn action commands off, because they press A to
+  advance text and measure damage, and a press that landed in a window would
+  scale it. `battle.py` leaves them on, so it now plays a full battle with the
+  feature live.
 - `navigate.py`, `rominspect.py`, `debugbattle.py` - shared helpers for scripted
   input, for reading the ROM through the linker's own symbol names, and for
   dropping straight into the debug build's test battle.
 
-Current headroom: ROM0 138 bytes free (-18), ROMX 161,097 free (-602), WRAM0 30
-free (unchanged), HRAM 0 free (unchanged), SRAM 7,646 free (unchanged). No
-change in this release consumes any RAM.
+Current headroom: ROM0 118 bytes free (-20), ROMX 176,826 free (+15,729:
+bank $2D, previously unused, now holds the new combat code and has 15,729
+bytes left of its 16,384), WRAM0 30 free (unchanged), HRAM 0 free (unchanged),
+SRAM 7,646 free (unchanged). No change in this release consumes any RAM: the
+action command state lives in padding that was already there.

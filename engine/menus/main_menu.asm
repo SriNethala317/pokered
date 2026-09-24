@@ -641,7 +641,9 @@ SetOptionsFromCursorPositions:
 .battleStyleShift
 	res BIT_BATTLE_SHIFT, d
 .storeOptions
-	ld a, d
+	ld a, [wOptions]
+	and ACTION_COMMANDS_MASK ; not on this menu, keep whatever it was
+	or d
 	ld [wOptions], a
 	ret
 
@@ -650,7 +652,7 @@ SetCursorPositionsFromOptions:
 	ld hl, TextSpeedOptionData + 1
 	ld a, [wOptions]
 	ld c, a
-	and $3f
+	and TEXT_DELAY_MASK
 	push bc
 	ld de, 2
 	call IsInArray

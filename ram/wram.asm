@@ -508,7 +508,14 @@ wLowHealthAlarmDisabled:: db
 
 wPlayerMonMinimized:: db
 
-	ds 13
+; action command window (see engine/battle/action_commands.asm)
+wActionCommandResult:: db
+wActionCommandTimer:: db
+wActionCommandFrame:: db
+wActionCommandLastInput:: db
+wActionCommandBadgeTimer:: db
+
+	ds 8
 
 UNION
 ; the amount of damage accumulated by the enemy while biding
@@ -1550,7 +1557,10 @@ wSavedTileAnimations:: db
 
 wDamage:: dw
 
-	ds 2
+; nonzero while an action command is running; checked by DelayFrame every frame
+wActionCommandState:: db
+
+	ds 1
 
 wRepelRemainingSteps:: db
 

@@ -115,3 +115,18 @@ DEF EFFECTIVENESS_MASK EQU %01111111
 	const HAS_LIGHT_SCREEN_UP ; 1
 	const HAS_REFLECT_UP      ; 2
 	const TRANSFORMED         ; 3
+
+; wActionCommandState
+	const_def
+	const ACTION_COMMAND_IDLE    ; 0
+	const ACTION_COMMAND_LEAD_IN ; 1
+	const ACTION_COMMAND_WINDOW  ; 2
+	const ACTION_COMMAND_CLOSED  ; 3
+	const ACTION_COMMAND_BADGE   ; 4
+
+; wActionCommandResult
+	const_def
+	const ACTION_RESULT_NONE    ; 0
+	const ACTION_RESULT_EARLY   ; 1
+	const ACTION_RESULT_GOOD    ; 2
+	const ACTION_RESULT_PERFECT ; 3
