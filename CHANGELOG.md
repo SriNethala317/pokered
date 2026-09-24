@@ -25,7 +25,8 @@ Integration build sha1 `493aea78c62e631b76d3973f106f9ffcabf722aa`.
   learned as a fixed beat, and pressing early locks you out for that attack so
   mashing never pays. How wide the windows are depends on your badges (see the
   difficulty ramp below). A counter can never knock the attacker out; it stops at
-  1 HP. The result is shown as a badge for one second instead of a message, so
+  1 HP. If the attacker has a Substitute up, the Substitute takes the counter
+  instead, and a counter never breaks one. The result is shown as a badge for one second instead of a message, so
   nothing waits for a button.
 
   **Battles do not get longer.** The window runs during the animation that was
@@ -296,6 +297,18 @@ New checks under `test/`, all run against each build:
   recharge flag is set about 150 frames after the target's HP reaches 0, so a
   knockout late in a 900-frame turn could miss it and fail the check although
   the recharge was set.
+- `actionedge.py` - action command cases the staged check and the wild fuzz
+  cannot reach. It swaps the debug battle's wild Rhydon for a real trainer
+  party, so the genuine trainer path runs, and checks:
+  - Oak's tutorial text: shown once, never with the option Off, never in a
+    wild battle;
+  - Brock's timing over 24 turns;
+  - a trainer's Pokemon fainting with a badge up, and the next one sent out
+    with no badge left behind;
+  - a counter into a Substitute;
+  - link battles never arming;
+  - 250 fuzzed trainer turns, checking that no move arms twice.
+  This caught the counter going straight through a Substitute.
 - `fuzzbattle.py` - plays hundreds of turns of the debug battle with a random
   move on each side (every move that keeps a wild battle going), random badges,
   option, animation setting, HP and streak, and buttons mashed on almost every

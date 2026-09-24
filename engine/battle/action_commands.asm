@@ -487,7 +487,7 @@ ApplyActionCommand:
 	add hl, hl
 	call StoreActionDamage
 	ld a, ACTION_BADGE_DOUBLE
-	jr .showBadge
+	jp .showBadge
 
 .theirAttack
 	ld a, [wActionCommandFoe]
@@ -497,13 +497,13 @@ ApplyActionCommand:
 	cp ACTION_RESULT_GOOD
 	jr nc, .brace
 	and a
-	jr nz, .showBadge ; ACTION_BADGE_EARLY
+	jp nz, .showBadge ; ACTION_BADGE_EARLY
 	ld a, [wActionCommandFoe]
 	bit ACTION_FOE_TIMED, a
 	ld a, 0
-	jr z, .showBadge
+	jp z, .showBadge
 	ld a, ACTION_BADGE_FOE_GREAT
-	jr .showBadge
+	jp .showBadge
 
 ; damage x0.5, and a perfect brace hits back
 .brace
@@ -529,7 +529,8 @@ ApplyActionCommand:
 	jr nz, .braceBadge
 	ld a, ACTION_EFFECT_BLOCKED
 	ld [wActionCommandForceEffect], a
-; counter: a quarter of the damage blocked, at least 1, never a knockout
+; counter: a quarter of the damage blocked, at least 1, never a knockout, and
+; taken by a Substitute if the attacker has one up
 	ld a, c
 	sub e
 	ld c, a
@@ -545,6 +546,23 @@ ApplyActionCommand:
 	jr nz, .gotCounter
 	inc c
 .gotCounter
+	ld a, [wEnemyBattleStatus2]
+	bit HAS_SUBSTITUTE_UP, a
+	jr z, .counterHitsMon
+; a Substitute takes the counter instead, and a counter never breaks one
+	ld a, b
+	and a
+	jr nz, .substituteLeftOne
+	ld a, [wEnemySubstituteHP]
+	sub c
+	jr c, .substituteLeftOne
+	jr nz, .storeSubstitute
+.substituteLeftOne
+	ld a, 1
+.storeSubstitute
+	ld [wEnemySubstituteHP], a
+	jr .braceBadge
+.counterHitsMon
 	ld hl, wEnemyMonHP
 	ld a, [hli]
 	ld d, a
