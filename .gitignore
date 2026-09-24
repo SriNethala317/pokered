@@ -33,3 +33,7 @@
 
 # graphify output
 graphify-out/
+
+# web player: fetched core and build output
+web/vendor/
+web/build/
