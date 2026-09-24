@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="theme-color" content="#1d1f24">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>RESONANCE</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<main id="app">
+  <header class="bar">
+    <strong class="brand">RESONANCE</strong>
+    <span id="status" class="status" role="status"></span>
+    <button id="menuBtn" class="icon" aria-label="Menu" aria-expanded="false">☰</button>
+  </header>
+
+  <section id="setup" class="panel">
+    <h1>Play RESONANCE</h1>
+    <p>Pick your own <b>Pokémon Red</b> (US/Europe) ROM file. The page patches it here on your device; your ROM is never uploaded.</p>
+    <label class="file">
+      <input id="romFile" type="file" accept=".gb,.gbc,.bin,application/octet-stream">
+      <span>Choose ROM…</span>
+    </label>
+    <button id="resumeBtn" class="primary" hidden>Continue</button>
+    <p id="setupMsg" class="msg" role="alert"></p>
+  </section>
+
+  <section id="game" hidden>
+    <div id="screenWrap">
+      <canvas id="screen" width="160" height="144"></canvas>
+      <canvas id="overlay" width="160" height="144" aria-hidden="true"></canvas>
+      <div id="tags" aria-hidden="true"></div>
+      <div id="linkBadge" hidden>LINK</div>
+    </div>
+
+    <div id="pad">
+      <div id="dpad" aria-label="D-pad"><span class="u"></span><span class="d"></span><span class="l"></span><span class="r"></span></div>
+      <div id="ab">
+        <button class="btn b" data-key="b" aria-label="B">B</button>
+        <button class="btn a" data-key="a" aria-label="A">A</button>
+      </div>
+      <div id="ss">
+        <button class="pill" data-key="select">SELECT</button>
+        <button class="pill" data-key="start">START</button>
+      </div>
+    </div>
+  </section>
+
+  <aside id="menu" class="drawer" hidden>
+    <section>
+      <h2>Game</h2>
+      <div class="row">
+        <button id="muteBtn">Sound: on</button>
+        <button id="fsBtn">Fullscreen</button>
+      </div>
+      <div class="row">
+        <button id="exportBtn">Export save</button>
+        <label class="file small"><input id="importFile" type="file" accept=".sav,.srm,application/octet-stream"><span>Import save</span></label>
+      </div>
+      <p class="hint">Keys: arrows/WASD, X/K = A, Z/J = B, Enter = Start, Backspace = Select.</p>
+      <p class="hint">Emulator core: <a href="https://sameboy.github.io/">SameBoy</a> (<a href="build/SameBoy-LICENSE.txt">Expat licence</a>). Pokémon is © Nintendo, Creatures and GAME FREAK; bring your own ROM.</p>
+    </section>
+
+    <section id="mp">
+      <h2>Play with friends</h2>
+      <div id="mpOut">
+        <label>Your name <input id="nameIn" maxlength="12" autocomplete="nickname"></label>
+        <label>Password (optional) <input id="pwIn" type="password" maxlength="64" autocomplete="off"></label>
+        <div class="row">
+          <button id="hostBtn" class="primary">Create room</button>
+        </div>
+        <div class="row">
+          <input id="codeIn" placeholder="Room code" maxlength="12" autocapitalize="characters" autocomplete="off">
+          <button id="joinBtn">Join</button>
+        </div>
+        <details>
+          <summary>Connection settings</summary>
+          <label>TURN server URL <input id="turnUrl" placeholder="turn:example.org:3478"></label>
+          <label>TURN username <input id="turnUser" autocomplete="off"></label>
+          <label>TURN password <input id="turnPass" type="password" autocomplete="off"></label>
+          <p class="hint">Only needed if friends on mobile data can't connect.</p>
+        </details>
+      </div>
+      <div id="mpIn" hidden>
+        <p>Room <b id="roomCode"></b> <button id="copyBtn" class="small">Copy</button> <button id="leaveBtn" class="small">Leave</button></p>
+        <ul id="roster"></ul>
+        <div id="requests"></div>
+        <p id="linkState" class="msg"></p>
+        <button id="endLinkBtn" hidden>End link</button>
+        <div id="chatBox">
+          <div class="row"><label class="check"><input id="chatOn" type="checkbox" checked> Chat</label></div>
+          <ol id="chatLog" aria-live="polite"></ol>
+          <div id="presets" class="row"></div>
+          <form id="chatForm" class="row">
+            <input id="chatIn" maxlength="120" placeholder="Say something" autocomplete="off">
+            <button>Send</button>
+          </form>
+        </div>
+      </div>
+      <p id="mpMsg" class="msg" role="alert"></p>
+    </section>
+  </aside>
+
+  <dialog id="ask">
+    <form method="dialog">
+      <p id="askText"></p>
+      <div class="row"><button value="no">No</button><button value="yes" class="primary">Yes</button></div>
+    </form>
+  </dialog>
+</main>
+<script type="module" src="app.js"></script>
+</body>
+</html>

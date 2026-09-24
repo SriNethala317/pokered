@@ -36,3 +36,7 @@ graphify-out/
 
 # test output
 test/out/
+
+# web player: fetched core and build output
+web/vendor/
+web/build/

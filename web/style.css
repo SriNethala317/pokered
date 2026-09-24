@@ -1,0 +1,185 @@
+:root {
+  --bg: #1d1f24;
+  --panel: #2a2d34;
+  --ink: #eceae4;
+  --muted: #a9a7a0;
+  --accent: #e0443c;
+  --btn: #3a3e47;
+  --btn-press: #545a66;
+  --gb: #c4cfa1;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font: 16px/1.4 system-ui, -apple-system, "Segoe UI", sans-serif;
+  overflow-x: hidden;
+  -webkit-text-size-adjust: 100%;
+}
+body { min-height: 100dvh; }
+#app {
+  max-width: 100vw;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+}
+button, input, .file span {
+  font: inherit;
+  color: inherit;
+  background: var(--btn);
+  border: 0;
+  border-radius: 8px;
+  padding: 10px 14px;
+  min-height: 44px;
+}
+button:active { background: var(--btn-press); }
+button.primary { background: var(--accent); color: #fff; }
+button.small, .file.small span { min-height: 32px; padding: 4px 10px; font-size: 14px; }
+input { background: #16181c; min-width: 0; width: 100%; }
+label { display: block; margin: 6px 0; color: var(--muted); font-size: 14px; }
+label input { margin-top: 4px; color: var(--ink); }
+.check { display: flex; gap: 8px; align-items: center; }
+.check input { width: auto; min-height: 0; }
+.row { display: flex; gap: 8px; margin: 8px 0; flex-wrap: wrap; }
+.row > input { flex: 1; }
+.hint { color: var(--muted); font-size: 13px; }
+.msg { color: #ffb4a8; min-height: 1.2em; }
+.file { display: inline-block; cursor: pointer; }
+.file input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.file span { display: inline-flex; align-items: center; background: var(--accent); color: #fff; }
+.file.small span { background: var(--btn); color: var(--ink); }
+
+.bar {
+  display: flex; align-items: center; gap: 10px;
+  padding: 6px 12px;
+  background: var(--panel);
+}
+.brand { letter-spacing: 0.1em; }
+.status { flex: 1; font-size: 13px; color: var(--muted); overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.icon { min-width: 44px; font-size: 20px; }
+
+.panel { padding: 16px; max-width: 560px; margin: 0 auto; }
+h1 { font-size: 22px; }
+h2 { font-size: 17px; margin: 8px 0; }
+
+/* ---- game ---- */
+#game {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 8px;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+#screenWrap {
+  position: relative;
+  width: min(100%, calc((100dvh - 330px) * 160 / 144), 640px);
+  min-width: min(100%, 240px);
+  aspect-ratio: 160 / 144;
+  background: #000;
+}
+#screen, #overlay {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
+#tags { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+.tag, .bubble {
+  position: absolute;
+  transform: translate(-50%, -100%);
+  font-size: clamp(9px, 2.4vw, 13px);
+  white-space: nowrap;
+  padding: 0 4px;
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.6);
+  color: #fff;
+}
+.bubble {
+  transform: translate(-50%, calc(-100% - 1.6em));
+  background: #fff; color: #000;
+  max-width: 60%;
+  white-space: normal;
+  text-align: center;
+}
+#linkBadge {
+  position: absolute; top: 4px; right: 4px;
+  background: var(--accent); color: #fff;
+  font-size: 11px; padding: 1px 6px; border-radius: 4px;
+}
+
+/* ---- touch pad ---- */
+#pad {
+  width: 100%;
+  max-width: 520px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-areas: "dpad ab" "ss ss";
+  align-items: center;
+  gap: 12px;
+  padding: 4px 8px 12px;
+}
+#dpad {
+  grid-area: dpad;
+  position: relative;
+  width: min(40vw, 170px); aspect-ratio: 1;
+  justify-self: start;
+  touch-action: none;
+}
+#dpad span { position: absolute; background: var(--btn); border-radius: 6px; }
+#dpad .u, #dpad .d { left: 33%; width: 34%; height: 36%; }
+#dpad .u { top: 0; } #dpad .d { bottom: 0; }
+#dpad .l, #dpad .r { top: 33%; height: 34%; width: 36%; }
+#dpad .l { left: 0; } #dpad .r { right: 0; }
+#dpad::after { content: ""; position: absolute; left: 33%; top: 33%; width: 34%; height: 34%; background: var(--btn); }
+#ab { grid-area: ab; display: flex; gap: 14px; justify-self: end; transform: rotate(-20deg); }
+.btn {
+  width: min(18vw, 76px); height: min(18vw, 76px);
+  border-radius: 50%;
+  background: var(--accent); color: #fff; font-weight: 700;
+  touch-action: none;
+}
+.btn.b { margin-top: 28px; }
+#ss { grid-area: ss; display: flex; justify-content: center; gap: 20px; }
+.pill { border-radius: 20px; font-size: 12px; min-height: 32px; padding: 4px 14px; touch-action: none; }
+
+/* no touch: hide the pad on big screens with a keyboard */
+@media (hover: hover) and (pointer: fine) {
+  #pad { opacity: 0.35; }
+  #screenWrap { width: min(100%, calc((100dvh - 120px) * 160 / 144), 800px); }
+}
+/* phone held sideways: pad on both sides of the screen */
+@media (orientation: landscape) and (max-height: 520px) {
+  #game { flex-direction: row; justify-content: center; }
+  #screenWrap { width: auto; height: calc(100dvh - 70px); }
+  #pad { position: absolute; inset: auto 0 8px 0; max-width: none; pointer-events: none; grid-template-areas: "dpad ab" "ss ss"; }
+  #pad > * { pointer-events: auto; }
+}
+
+/* ---- drawer ---- */
+.drawer {
+  position: fixed; top: 56px; right: 0; bottom: 0;
+  width: min(100vw, 400px);
+  overflow-y: auto;
+  background: var(--panel);
+  padding: 8px 16px 32px;
+  z-index: 10;
+  box-shadow: -4px 0 16px rgba(0, 0, 0, 0.4);
+}
+#roster { list-style: none; padding: 0; }
+#roster li { display: flex; gap: 6px; align-items: center; padding: 4px 0; flex-wrap: wrap; }
+#roster li .name { flex: 1; min-width: 6em; overflow-wrap: anywhere; }
+#chatLog { list-style: none; padding: 0; margin: 0; max-height: 30vh; overflow-y: auto; font-size: 14px; }
+#chatLog li { overflow-wrap: anywhere; }
+#chatLog b { color: var(--gb); }
+#presets button { min-height: 32px; padding: 4px 10px; font-size: 13px; }
+dialog { background: var(--panel); color: var(--ink); border: 0; border-radius: 12px; max-width: min(90vw, 360px); }
+dialog::backdrop { background: rgba(0, 0, 0, 0.6); }
+a { color: var(--gb); }

@@ -62,6 +62,7 @@ RGBGFXFLAGS  ?= -Weverything
 	tidy \
 	compare \
 	bps \
+	web \
 	tools
 
 all: $(roms)
@@ -106,6 +107,15 @@ compare: $(roms) $(patches)
 # See tools/make_bps.py for where the vanilla base comes from.
 bps: pokered.gbc
 	python3 tools/make_bps.py pokered
+
+# The browser player (Red only): core.wasm, the patch and the manifest in
+# web/build/. Needs emcc (set EMCC=) and web/fetch_core.sh run once.
+web: pokered.gbc
+	python3 tools/make_bps.py pokered
+	python3 tools/web_symbols.py pokered
+	cp pokered.bps web/build/pokered.bps
+	cp web/vendor/SameBoy/LICENSE web/build/SameBoy-LICENSE.txt
+	$(MAKE) -C web/core wasm
 
 tools:
 	$(MAKE) -C tools/
