@@ -5,7 +5,7 @@ build has sha1 `ea9bcae617fdf159b045185467ae58b2e4a48b9a`.
 
 ## Unreleased
 
-Integration build sha1 `b73317ff91c8c94ea403981f2f03aa9e4616dfb1`.
+Integration build sha1 `de9336b50af2ce6bb7f725f937d9345d70f98158`.
 
 ### Action commands
 
@@ -29,8 +29,8 @@ Integration build sha1 `b73317ff91c8c94ea403981f2f03aa9e4616dfb1`.
 
   **Battles do not get longer.** The window runs during the animation that was
   already playing. If an animation finishes first, the window is held open for
-  at most 20 frames; across the test's 21 staged attacks the most it ever added
-  was 6. With battle animations off, it runs inside the existing half-second
+  at most 20 frames; across the test's 68 staged attacks the most it ever added
+  was 10. With battle animations off, it runs inside the existing half-second
   pause.
 
   The bonus is applied once per attack, just before the damage is dealt, so
@@ -38,10 +38,45 @@ Integration build sha1 `b73317ff91c8c94ea403981f2f03aa9e4616dfb1`.
   that deal fixed damage or knock out outright are left alone. Link battles
   never use it.
 
-  This is the first step of the brief's Action Commands. A move's type does not
-  change the input yet, there is no difficulty ramp by badge count, a perfect
-  attack does not yet guarantee a secondary effect, and trainers do not time
-  their own attacks. Those come next.
+  Not done yet: there is no difficulty ramp by badge count, no feints, and
+  trainers do not time their own attacks. Those come next.
+
+- **The move's type picks the input.** Each type has its own pattern, so the
+  same press is not asked for every turn:
+
+  | Pattern | Types | Cue | Input |
+  |---|---|---|---|
+  | Tap | Normal, Flying, Bug, Ghost, Dragon | `A!` | one press |
+  | Snap | Electric, Psychic | `A!!` | one press in half the time: 7 frames for perfect, 12 for good |
+  | Hold | Water, Ice | `HOLD A`, then `LET GO!` | hold the button once HOLD shows, and let go on the cue. Letting go early is TOO SOON; not holding when the cue comes does nothing |
+  | Rapid | Fighting, Rock, Ground | `A×3`, counting down | three presses; judged on the third, with 12 extra frames to fit them |
+  | Double | Fire, Grass, Poison | `A!`, then `   A!` | a press on each of two cues 6 to 9 frames apart; the result is the worse of the two, and missing the second loses the first |
+
+  When you are being hit, the same patterns ask for B.
+
+  Gen 1 quirk: Karate Chop is Normal-type, so it taps.
+
+- **A move's power sets its tempo.** The lead-in grows by a frame for every 32
+  power, so big moves wind up visibly longer, and moves of 100 power or more
+  lose 2 frames from the perfect window.
+
+- **A perfect hit makes sure of the secondary effect.** A PERFECT attack always
+  lands its move's secondary effect: Ember always burns, Confusion always
+  confuses, Bite always flinches, Acid always lowers Defense. A perfect brace
+  (COUNTER) stops the attacker's secondary effect entirely.
+
+  These still block the effect as before:
+  - Substitute;
+  - a target that already has a status;
+  - a target of the same type as the move.
+
+  Good results roll as usual.
+
+- A cue now plays a short click (the A/B press sound) when it appears.
+
+- Fixed: a result badge that was still on screen at the end of a turn was
+  saved with the screen, and came back for good when the battle menu restored
+  it. The badge is now cleaned from the saved copy as well.
 
 - **An Action Commands option: On, Assist or Off.** It lives in two unused bits
   of the saved options byte. On is the default, including for existing saves.
@@ -193,8 +228,11 @@ New checks under `test/`, all run against each build:
   swapped or unscaled SPA/SPD row fails. It then checks the level-up stats box
   through both of its callers: winning a battle one experience point short of a
   level, and using a Rare Candy from the debug new game's bag.
-- `actioncheck.py` - stages turns in the debug battle where both sides use
-  Pound, and presses A or B at exact frames after the cue. It hooks the engine
+- `actioncheck.py` - stages turns in the debug battle where both sides use the
+  same move, and presses A or B at exact frames after the cue. Each pattern is
+  staged with a move of its type and checked both ways: its own input succeeds
+  and a plain tap does not. It also checks that a perfect Ember burns three
+  times out of three, and that a perfect brace blocks the burn. It hooks the engine
   to read the damage just before and just after the bonus, so the x1.5, x0.5
   and counter amounts are checked exactly. Also covers pressing late, early and
   with the wrong button, a counter against a 1 HP attacker, Doubleslap not
@@ -209,8 +247,8 @@ New checks under `test/`, all run against each build:
   input, for reading the ROM through the linker's own symbol names, and for
   dropping straight into the debug build's test battle.
 
-Current headroom: ROM0 118 bytes free (-20), ROMX 176,826 free (+15,729:
-bank $2D, previously unused, now holds the new combat code and has 15,729
+Current headroom: ROM0 118 bytes free (-20), ROMX 176,370 free (+15,273:
+bank $2D, previously unused, now holds the new combat code and has 15,340
 bytes left of its 16,384), WRAM0 30 free (unchanged), HRAM 0 free (unchanged),
 SRAM 7,646 free (unchanged). No change in this release consumes any RAM: the
 action command state lives in padding that was already there.

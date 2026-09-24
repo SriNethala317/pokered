@@ -130,3 +130,17 @@ DEF EFFECTIVENESS_MASK EQU %01111111
 	const ACTION_RESULT_EARLY   ; 1
 	const ACTION_RESULT_GOOD    ; 2
 	const ACTION_RESULT_PERFECT ; 3
+
+; wActionCommandPattern, chosen by the move's type
+	const_def
+	const ACTION_PATTERN_TAP    ; 0 one press on the cue
+	const ACTION_PATTERN_SNAP   ; 1 one press, in half the time
+	const ACTION_PATTERN_HOLD   ; 2 hold the button, let go on the cue
+	const ACTION_PATTERN_RAPID  ; 3 three presses
+	const ACTION_PATTERN_DOUBLE ; 4 a press on each of two cues
+
+; wActionCommandForceEffect
+	const_def
+	const ACTION_EFFECT_ROLL    ; 0 the move's secondary effect rolls as usual
+	const ACTION_EFFECT_FORCED  ; 1 a perfect attack: it always lands
+	const ACTION_EFFECT_BLOCKED ; 2 a perfect brace: it never does

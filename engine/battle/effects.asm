@@ -113,8 +113,7 @@ PoisonEffect:
 	jr nz, .didntAffect
 	jr .inflictPoison
 .sideEffectTest
-	call BattleRandom
-	cp b ; was side effect successful?
+	call RollSecondaryEffect ; was side effect successful?
 	ret nc
 .inflictPoison
 	dec hl
@@ -221,8 +220,7 @@ FreezeBurnParalyzeEffect:
 	sub PARALYZE_SIDE_EFFECT2 - PARALYZE_SIDE_EFFECT1 ; treat extra effective as regular from now on
 .regular_effectiveness
 	push af
-	call BattleRandom ; get random 8bit value for probability test
-	cp b
+	call RollSecondaryEffect ; get random 8bit value for probability test
 	pop bc
 	ret nc ; do nothing if random value is >= 1A or 4D [no status applied]
 	ld a, b ; what type of effect is this?
@@ -274,8 +272,7 @@ FreezeBurnParalyzeEffect:
 	sub BURN_SIDE_EFFECT2 - BURN_SIDE_EFFECT1 ; treat extra effective as regular from now on
 .regular_effectiveness2
 	push af
-	call BattleRandom
-	cp b
+	call RollSecondaryEffect
 	pop bc
 	ret nc
 	ld a, b
@@ -561,8 +558,8 @@ StatModifierDownEffect:
 	ld a, [de]
 	cp ATTACK_DOWN_SIDE_EFFECT
 	jr c, .nonSideEffect
-	call BattleRandom
-	cp 33 percent + 1 ; chance for side effects
+	ld b, 33 percent + 1 ; chance for side effects
+	call RollSecondaryEffect
 	jp nc, CantLowerAnymore
 	ld a, [de]
 	sub ATTACK_DOWN_SIDE_EFFECT ; map each stat to 0-3
@@ -991,11 +988,26 @@ FlinchSideEffect:
 	jr z, .gotEffectChance
 	ld b, 30 percent + 1 ; chance of flinch otherwise
 .gotEffectChance
-	call BattleRandom
-	cp b
+	call RollSecondaryEffect
 	ret nc
 	set FLINCHED, [hl] ; set mon's status to flinching
 	call ClearHyperBeam
+	ret
+
+; Sets carry if a secondary effect with chance b takes hold. A perfect action
+; command makes sure of it, and a perfect brace against it stops it.
+RollSecondaryEffect:
+	ld a, [wActionCommandForceEffect]
+	and a
+	jr z, .roll
+	dec a
+	scf
+	ret z ; ACTION_EFFECT_FORCED
+	and a ; ACTION_EFFECT_BLOCKED
+	ret
+.roll
+	call BattleRandom
+	cp b
 	ret
 
 OneHitKOEffect:
@@ -1118,8 +1130,8 @@ RecoilEffect:
 	jpfar RecoilEffect_
 
 ConfusionSideEffect:
-	call BattleRandom
-	cp 10 percent ; chance of confusion
+	ld b, 10 percent ; chance of confusion
+	call RollSecondaryEffect
 	ret nc
 	jr ConfusionSideEffectSuccess
 

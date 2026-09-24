@@ -514,8 +514,17 @@ wActionCommandTimer:: db
 wActionCommandFrame:: db
 wActionCommandLastInput:: db
 wActionCommandBadgeTimer:: db
+wActionCommandPattern:: db
+; presses left for a rapid pattern, or the beat of a double
+wActionCommandStep:: db
+; window lengths for this attack, in frames after the cue
+wActionCommandPerfect:: db
+wActionCommandGood:: db
+; the cue string on screen, 0 if none
+wActionCommandCue:: db
+wActionCommandForceEffect:: db
 
-	ds 8
+	ds 2
 
 UNION
 ; the amount of damage accumulated by the enemy while biding
