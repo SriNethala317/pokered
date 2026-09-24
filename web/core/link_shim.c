@@ -66,6 +66,11 @@ struct shim {
     bool hook_break;
 
     bool sram_dirty;
+
+    /* see shim_link_gate() */
+    uint16_t gate_addr;
+    uint8_t gate_value;
+    bool local; /* the transfer in flight is not going over the cable */
 };
 
 /* ---------- queues ---------- */
@@ -144,7 +149,8 @@ static void on_bit_start(GB_gameboy_t *gb, bool bit)
     /* a new byte (or the game restarted one mid-flight) */
     s->in_transfer = true;
     s->bits = 0;
-    if (!s->plugged) {
+    s->local = !s->plugged || (s->gate_addr && GB_safe_read_memory(gb, s->gate_addr) != s->gate_value);
+    if (s->local) {
         s->stalled = false;
         return;
     }
@@ -168,7 +174,7 @@ static bool on_bit_end(GB_gameboy_t *gb)
     }
     s->in_transfer = false;
     s->expect_next_bit = false;
-    if (!s->plugged || !s->reply_ready) return true; /* no cable: reads $FF */
+    if (!s->plugged || s->local || !s->reply_ready) return true; /* no cable: reads $FF */
     s->reply_ready = false;
     /* SB has already been shifted left; replace it so the result is exact */
     io_write_raw(s, IO_SB, s->reply & 0xFE);
@@ -341,6 +347,12 @@ SHIM_API void shim_link_plug(shim_t *s, int plugged)
 }
 
 SHIM_API int shim_link_plugged(shim_t *s) { return s->plugged; }
+
+SHIM_API void shim_link_gate(shim_t *s, uint16_t addr, uint8_t value)
+{
+    s->gate_addr = addr;
+    s->gate_value = value;
+}
 SHIM_API int shim_link_stalled(shim_t *s) { return s->stalled; }
 
 SHIM_API int shim_link_pop(shim_t *s, uint8_t *kind, uint8_t *byte)

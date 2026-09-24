@@ -47,6 +47,7 @@ def _load():
         "shim_link_plug": (None, [P, I]),
         "shim_link_plugged": (I, [P]),
         "shim_link_stalled": (I, [P]),
+        "shim_link_gate": (None, [P, U16, U8]),
         "shim_link_pop_packed": (I, [P]),
         "shim_link_push": (I, [P, U8, U8]),
         "shim_link_bytes_sent": (ctypes.c_uint32, [P]),
@@ -121,6 +122,9 @@ class Console:
     # link
     def plug(self, on=True):
         self.L.shim_link_plug(self.s, 1 if on else 0)
+
+    def gate(self, addr, value):
+        self.L.shim_link_gate(self.s, addr, value)
 
     def stalled(self):
         return bool(self.L.shim_link_stalled(self.s))

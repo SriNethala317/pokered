@@ -105,6 +105,11 @@ SHIM_API int shim_rom_bank(shim_t *s);
 SHIM_API void shim_link_plug(shim_t *s, int plugged);
 SHIM_API int shim_link_plugged(shim_t *s);
 SHIM_API int shim_link_stalled(shim_t *s);
+/* Only put transfers this console clocks itself (internal clock) on the cable
+ * while memory[addr] == value; otherwise they complete locally as if no cable
+ * were plugged. The link session guest uses this so that only the session host
+ * ever drives the clock while the connection is being set up. addr 0 = off. */
+SHIM_API void shim_link_gate(shim_t *s, uint16_t addr, uint8_t value);
 /* Pops one outgoing message. Returns 1 and fills kind/byte, or 0 if none. */
 SHIM_API int shim_link_pop(shim_t *s, uint8_t *kind, uint8_t *byte);
 /* Same, packed as (kind << 8) | byte, or -1 if none (handier from JS). */

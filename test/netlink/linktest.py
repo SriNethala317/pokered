@@ -213,10 +213,42 @@ def run_linked(a, b, wire, until, budget, must=True):
     )
 
 
+def saved_species(p):
+    """First party species in the battery save (not in WRAM)."""
+    bank, addr = BA("sPartyData")
+    return p.c.sram()[bank * 0x2000 + (addr - 0xA000) + 1]
+
+
+def drop_mid_trade(host, guest, wire):
+    """Cut the cable partway through the trade, as a dropped connection would,
+    then do what linkhost.js does on its timeout (unplug, reset) and check
+    neither battery save changed."""
+    before = {p.name: saved_species(p) for p in (host, guest)}
+    assert before == {"host": host.species, "guest": guest.species}, before
+    start = wire.messages
+    run_linked(host, guest, wire, lambda: wire.messages > start + 40, 30000)
+    wire.q.clear()
+    wire.deliver = lambda: None  # the network is gone
+    wire.collect = lambda: [p.c.pop() for p in (host, guest)]
+    run_linked(host, guest, wire, lambda: False, 700, must=False)  # the 10 s timeout
+    print(f"drop: cable cut after {wire.messages - start} trade messages; host stalled={host.c.stalled()}")
+    for p in (host, guest):
+        p.c.plug(False)
+        p.c.L.shim_reset(p.c.s)
+        p.frames(600)
+    after = {p.name: saved_species(p) for p in (host, guest)}
+    assert after == before, f"a save changed: {before} -> {after}"
+    print(f"drop: both saves unchanged after reset ({after})")
+    return 0
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--delay", type=int, default=3, help="one-way delay in frames")
     ap.add_argument("--stage", type=int, default=5, help="stop after this stage")
+    ap.add_argument("--drop", action="store_true", help="cut the cable mid-trade and check the saves")
+    ap.add_argument("--together", action="store_true",
+                    help="both talk to the receptionist at once; the guest is gated as the web page does")
     args = ap.parse_args()
 
     t0 = time.time()
@@ -229,6 +261,9 @@ def main():
     wire = Wire(host, guest, args.delay)
     host.c.plug(True)
     guest.c.plug(True)
+    if args.together:
+        # linkhost.js: the session guest only drives the clock once connected
+        guest.c.gate(A("hSerialConnectionStatus"), K["USING_EXTERNAL_CLOCK"])
     HS = 0xFFAA  # hSerialConnectionStatus
     assert A("hSerialConnectionStatus") == HS
 
@@ -249,9 +284,10 @@ def main():
         yield from guest.wait(20)
         yield from guest.tap("up")
         # wait until the host has claimed the cable before talking
-        while host.c.read(HS) != K["USING_INTERNAL_CLOCK"]:
+        while not args.together and host.c.read(HS) != K["USING_INTERNAL_CLOCK"]:
             yield
-        yield from guest.wait(30)
+        if not args.together:
+            yield from guest.wait(30)
         yield from mash_until(guest, lambda: in_menu(guest))
         yield from guest.wait(100000)
 
@@ -324,6 +360,9 @@ def main():
         return (
             host.mem("wPartySpecies") == guest.species and guest.mem("wPartySpecies") == host.species
         )
+
+    if args.drop:
+        return drop_mid_trade(host, guest, wire)
 
     stall = run_linked(host, guest, wire, traded, 30000)
     print(f"stage 5: trade complete after {wire.tick} ticks, {wire.messages} messages, stalls {stall}")
