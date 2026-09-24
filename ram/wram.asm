@@ -805,6 +805,8 @@ NEXTU
 wOptionsTextSpeedCursorX:: db
 wOptionsBattleAnimCursorX:: db
 wOptionsBattleStyleCursorX:: db
+; the up/down code steps through these in order
+wOptionsActionCmdCursorX:: db
 wOptionsCancelCursorX:: db
 
 NEXTU

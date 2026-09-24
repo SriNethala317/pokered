@@ -442,25 +442,45 @@ SaveScreenInfoText:
 
 DisplayOptionMenu:
 	hlcoord 0, 0
-	ld b, 3
+	ld b, 2
 	ld c, 18
 	call TextBoxBorder
-	hlcoord 0, 5
-	ld b, 3
+	hlcoord 0, 4
+	ld b, 2
 	ld c, 18
 	call TextBoxBorder
-	hlcoord 0, 10
-	ld b, 3
+	hlcoord 0, 8
+	ld b, 2
 	ld c, 18
 	call TextBoxBorder
+	hlcoord 0, 12
+	ld b, 2
+	ld c, 18
+	call TextBoxBorder
+	; each setting is its label, and the choices on the row straight below
 	hlcoord 1, 1
 	ld de, TextSpeedOptionText
 	call PlaceString
-	hlcoord 1, 6
+	hlcoord 1, 2
+	ld de, TextSpeedOptionChoicesText
+	call PlaceString
+	hlcoord 1, 5
 	ld de, BattleAnimationOptionText
 	call PlaceString
-	hlcoord 1, 11
+	hlcoord 1, 6
+	ld de, BattleAnimationOptionChoicesText
+	call PlaceString
+	hlcoord 1, 9
 	ld de, BattleStyleOptionText
+	call PlaceString
+	hlcoord 1, 10
+	ld de, BattleStyleOptionChoicesText
+	call PlaceString
+	hlcoord 1, 13
+	ld de, ActionCommandsOptionText
+	call PlaceString
+	hlcoord 1, 14
+	ld de, ActionCommandsOptionChoicesText
 	call PlaceString
 	hlcoord 2, 16
 	ld de, OptionMenuCancelText
@@ -472,7 +492,7 @@ DisplayOptionMenu:
 	inc a ; 1 << BIT_FAST_TEXT_DELAY
 	ld [wLetterPrintingDelayFlags], a
 	ld [wOptionsCancelCursorX], a
-	ld a, 3 ; text speed cursor Y coordinate
+	ld a, 2 ; text speed cursor Y coordinate
 	ld [wTopMenuItemY], a
 	call SetCursorPositionsFromOptions
 	ld a, [wOptionsTextSpeedCursorX] ; text speed cursor X coordinate
@@ -513,44 +533,55 @@ DisplayOptionMenu:
 	jr nz, .downPressed
 	bit B_PAD_UP, b
 	jr nz, .upPressed
-	cp 8 ; cursor in Battle Animation section?
+	cp 6 ; cursor in Battle Animation section?
 	jr z, .cursorInBattleAnimation
-	cp 13 ; cursor in Battle Style section?
+	cp 10 ; cursor in Battle Style section?
 	jr z, .cursorInBattleStyle
 	cp 16 ; cursor on Cancel?
 	jr z, .loop
-; cursor in Text Speed
+; cursor in Text Speed or Action Commands, which share three positions
+	ld hl, wOptionsTextSpeedCursorX
+	cp 2
+	jr z, .gotThreeWayCursor
+	ld hl, wOptionsActionCmdCursorX
+.gotThreeWayCursor
 	bit B_PAD_LEFT, b
-	jp nz, .pressedLeftInTextSpeed
-	jp .pressedRightInTextSpeed
+	jp nz, .pressedLeftInThreeWay
+	jp .pressedRightInThreeWay
 .downPressed
 	cp 16
-	ld b, -13
+	ld b, -14
 	ld hl, wOptionsTextSpeedCursorX
 	jr z, .updateMenuVariables
-	ld b, 5
-	cp 3
+	ld b, 4
+	cp 2
 	inc hl
 	jr z, .updateMenuVariables
-	cp 8
+	cp 6
 	inc hl
 	jr z, .updateMenuVariables
-	ld b, 3
+	cp 10
+	inc hl
+	jr z, .updateMenuVariables
+	ld b, 2
 	inc hl
 	jr .updateMenuVariables
 .upPressed
-	cp 8
-	ld b, -5
+	cp 6
+	ld b, -4
 	ld hl, wOptionsTextSpeedCursorX
 	jr z, .updateMenuVariables
-	cp 13
+	cp 10
+	inc hl
+	jr z, .updateMenuVariables
+	cp 14
 	inc hl
 	jr z, .updateMenuVariables
 	cp 16
-	ld b, -3
+	ld b, -2
 	inc hl
 	jr z, .updateMenuVariables
-	ld b, 13
+	ld b, 14
 	inc hl
 .updateMenuVariables
 	add b
@@ -569,42 +600,51 @@ DisplayOptionMenu:
 	xor 1 ^ 10 ; toggle between 1 and 10
 	ld [wOptionsBattleStyleCursorX], a
 	jp .eraseOldMenuCursor
-.pressedLeftInTextSpeed
-	ld a, [wOptionsTextSpeedCursorX] ; text speed cursor X coordinate
+; hl = the row's cursor X coordinate: 1, 7 or 14
+.pressedLeftInThreeWay
+	ld a, [hl]
 	cp 1
-	jr z, .updateTextSpeedXCoord
+	jr z, .updateThreeWayXCoord
 	cp 7
-	jr nz, .fromSlowToMedium
+	jr nz, .fromRightToMiddle
 	sub 6
-	jr .updateTextSpeedXCoord
-.fromSlowToMedium
+	jr .updateThreeWayXCoord
+.fromRightToMiddle
 	sub 7
-	jr .updateTextSpeedXCoord
-.pressedRightInTextSpeed
-	ld a, [wOptionsTextSpeedCursorX] ; text speed cursor X coordinate
+	jr .updateThreeWayXCoord
+.pressedRightInThreeWay
+	ld a, [hl]
 	cp 14
-	jr z, .updateTextSpeedXCoord
+	jr z, .updateThreeWayXCoord
 	cp 7
-	jr nz, .fromFastToMedium
+	jr nz, .fromLeftToMiddle
 	add 7
-	jr .updateTextSpeedXCoord
-.fromFastToMedium
+	jr .updateThreeWayXCoord
+.fromLeftToMiddle
 	add 6
-.updateTextSpeedXCoord
-	ld [wOptionsTextSpeedCursorX], a ; text speed cursor X coordinate
+.updateThreeWayXCoord
+	ld [hl], a
 	jp .eraseOldMenuCursor
 
 TextSpeedOptionText:
-	db   "TEXT SPEED"
-	next " FAST  MEDIUM SLOW@"
+	db "TEXT SPEED@"
+TextSpeedOptionChoicesText:
+	db " FAST  MEDIUM SLOW@"
 
 BattleAnimationOptionText:
-	db   "BATTLE ANIMATION"
-	next " ON       OFF@"
+	db "BATTLE ANIMATION@"
+BattleAnimationOptionChoicesText:
+	db " ON       OFF@"
 
 BattleStyleOptionText:
-	db   "BATTLE STYLE"
-	next " SHIFT    SET@"
+	db "BATTLE STYLE@"
+BattleStyleOptionChoicesText:
+	db " SHIFT    SET@"
+
+ActionCommandsOptionText:
+	db "ACTION COMMANDS@"
+ActionCommandsOptionChoicesText:
+	db " ON    ASSIST OFF@"
 
 OptionMenuCancelText:
 	db "CANCEL@"
@@ -641,9 +681,17 @@ SetOptionsFromCursorPositions:
 .battleStyleShift
 	res BIT_BATTLE_SHIFT, d
 .storeOptions
-	ld a, [wOptions]
-	and ACTION_COMMANDS_MASK ; not on this menu, keep whatever it was
-	or d
+	ld a, [wOptionsActionCmdCursorX]
+	ld e, ACTION_COMMANDS_ON
+	cp 1
+	jr z, .gotActionCommands
+	ld e, ACTION_COMMANDS_ASSIST
+	cp 7
+	jr z, .gotActionCommands
+	ld e, ACTION_COMMANDS_OFF
+.gotActionCommands
+	ld a, d
+	or e
 	ld [wOptions], a
 	ret
 
@@ -660,7 +708,7 @@ SetCursorPositionsFromOptions:
 	dec hl
 	ld a, [hl]
 	ld [wOptionsTextSpeedCursorX], a ; text speed cursor X coordinate
-	hlcoord 0, 3
+	hlcoord 0, 2
 	call .placeUnfilledRightArrow
 	sla c
 	ld a, 1 ; On
@@ -668,7 +716,7 @@ SetCursorPositionsFromOptions:
 	ld a, 10 ; Off
 .storeBattleAnimationCursorX
 	ld [wOptionsBattleAnimCursorX], a ; battle animation cursor X coordinate
-	hlcoord 0, 8
+	hlcoord 0, 6
 	call .placeUnfilledRightArrow
 	sla c
 	ld a, 1
@@ -676,7 +724,20 @@ SetCursorPositionsFromOptions:
 	ld a, 10
 .storeBattleStyleCursorX
 	ld [wOptionsBattleStyleCursorX], a ; battle style cursor X coordinate
-	hlcoord 0, 13
+	hlcoord 0, 10
+	call .placeUnfilledRightArrow
+	ld a, [wOptions]
+	and ACTION_COMMANDS_MASK
+	ld b, 1 ; On
+	jr z, .storeActionCmdCursorX
+	ld b, 7 ; Assist
+	cp ACTION_COMMANDS_ASSIST
+	jr z, .storeActionCmdCursorX
+	ld b, 14 ; Off
+.storeActionCmdCursorX
+	ld a, b
+	ld [wOptionsActionCmdCursorX], a
+	hlcoord 0, 14
 	call .placeUnfilledRightArrow
 ; cursor in front of Cancel
 	hlcoord 0, 16

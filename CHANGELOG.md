@@ -5,7 +5,7 @@ build has sha1 `ea9bcae617fdf159b045185467ae58b2e4a48b9a`.
 
 ## Unreleased
 
-Integration build sha1 `fbf5219b12f3433b3a8727759e44faf4e26e425c`.
+Integration build sha1 `493aea78c62e631b76d3973f106f9ffcabf722aa`.
 
 ### Action commands
 
@@ -118,11 +118,15 @@ Integration build sha1 `fbf5219b12f3433b3a8727759e44faf4e26e425c`.
 - **An Action Commands option: On, Assist or Off.** It lives in two unused bits
   of the saved options byte. On is the default, including for existing saves.
   Assist widens the window to 20 and 32 frames at every badge count, and turns
-  off trainer timing and feints; the inputs still unlock as usual. Off turns it off entirely, with
-  no windows and vanilla damage. The Options screen has no row for it yet; that
-  is a later step, and until then the setting cannot be changed in game. The
-  screen now keeps these bits when it saves, and the text speed code masks them
-  out: before this, setting either bit would have broken text speed.
+  off trainer timing and feints; the inputs still unlock as usual. Off turns it
+  off entirely, with no windows and vanilla damage. The text speed code masks
+  these bits out: before this, setting either bit would have broken text speed.
+
+- **The Options screen has an ACTION COMMANDS row** with ON, ASSIST and OFF,
+  moved between with left and right like text speed. To fit it, the screen is
+  now four boxes of two lines each, the label with its choices straight below,
+  and CANCEL underneath; up and down wrap between the top row and CANCEL as
+  before.
 
 ### Battle mechanics
 
@@ -290,11 +294,18 @@ New checks under `test/`, all run against each build:
   advance text and measure damage, and a press that landed in a window would
   scale it. `battle.py` leaves them on, so it now plays a full battle with the
   feature live.
+- `optionscheck.py` - boots the retail ROM to the main menu, opens OPTION and
+  reads the screen out of `wTileMap`: every label, choice line and CANCEL must
+  sit where the cursor code expects it, inside its box. It then walks the new
+  row left and right past both ends, checks `wOptions` after every press, and
+  changes each older row to prove none of them disturbs another. Finally it
+  closes the menu, opens it again, and checks every cursor comes back from the
+  saved byte.
 - `navigate.py`, `rominspect.py`, `debugbattle.py` - shared helpers for scripted
   input, for reading the ROM through the linker's own symbol names, and for
   dropping straight into the debug build's test battle.
 
-Current headroom: ROM0 118 bytes free (-20), ROMX 175,889 free (+14,190:
+Current headroom: ROM0 118 bytes free (-20), ROMX 175,746 free (+14,047:
 bank $2D, previously unused, now holds the new combat code and has 14,984
 bytes left of its 16,384), WRAM0 30 free (unchanged), HRAM 0 free (unchanged),
 SRAM 7,646 free (unchanged). No change in this release consumes any RAM: the
