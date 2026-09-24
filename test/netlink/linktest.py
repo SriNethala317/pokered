@@ -56,11 +56,30 @@ class Player:
         self.name = name
         self.c = Console(open(ROM, "rb").read())
         self.species = species
-        bank, addr = BA("LinkMenu")
-        self.h_linkmenu = self.c.hook(addr, bank)
-        self.h_overworld = self.c.hook(A("OverworldLoop"))
+        self.add_hooks()
         self.seen = set()
         self.driver = None
+        self.snaps = {}
+
+    def add_hooks(self):
+        c = self.c
+        self.h_linkmenu = c.hook(BA("LinkMenu")[1], BA("LinkMenu")[0])
+        self.h_overworld = c.hook(A("OverworldLoop"))
+        # fires when the trade menu opens, after the exchange and
+        # unpatching, so the parsed link data can be read at a fixed point
+        self.h_select = c.hook(BA("TradeCenter_SelectMon")[1], BA("TradeCenter_SelectMon")[0])
+
+    def snapshot(self):
+        """What the game made of the link exchange: the other player's name,
+        the shared random numbers, the other party and our own party."""
+        def block(start, end):
+            return bytes(self.c.read(a) for a in range(A(start), A(end)))
+        return {
+            "enemy name": bytes(self.c.read(A("wLinkEnemyTrainerName") + i) for i in range(11)),
+            "random numbers": bytes(self.c.read(A("wLinkBattleRandomNumberList") + i) for i in range(10)),
+            "enemy party": block("wEnemyPartyCount", "wTrainerHeaderPtr"),
+            "party": block("wPartyDataStart", "wPartyDataEnd"),
+        }
 
     # ---- helpers usable before linking (run frames directly) ----
     def frames(self, n):
@@ -71,6 +90,13 @@ class Player:
     def _collect(self):
         for h in self.c.hooks_fired():
             self.seen.add(h)
+            if h == self.h_select:
+                # the trade menu opens after each exchange: once before the
+                # trade and once after it, when the game re-exchanges
+                if "exchange" not in self.snaps:
+                    self.snaps["exchange"] = self.snapshot()
+                elif "after trade" not in self.snaps and self.mem("wPartySpecies") != self.species:
+                    self.snaps["after trade"] = self.snapshot()
 
     def mem(self, name, off=0):
         return self.c.read(A(name) + off)
@@ -141,8 +167,7 @@ class Player:
         c.L.shim_set_reg(c.s, 4, sp)
         c.L.shim_set_reg(c.s, 5, A("AddPartyMon"))
         c.L.shim_hook_clear(c.s)
-        self.h_linkmenu = c.hook(BA("LinkMenu")[1], BA("LinkMenu")[0])
-        self.h_overworld = c.hook(A("OverworldLoop"))
+        self.add_hooks()
         self.frames(30)
 
     # ---- driver primitives (generators) ----
@@ -214,8 +239,18 @@ def run_linked(a, b, wire, until, budget, must=True):
             Image.frombytes("RGBA", (160, 144), p.c.framebuffer()).save(f"/tmp/netlink_{p.name}.png")
     raise AssertionError(
         f"timed out: {a.name} map={a.mem('wCurMap')} status={a.c.read(0xFFAA):#x}, "
-        f"{b.name} map={b.mem('wCurMap')} status={b.c.read(0xFFAA):#x}"
+        f"{b.name} map={b.mem('wCurMap')} status={b.c.read(0xFFAA):#x}; "
+        + "; ".join(f"{p.name} pc={p.c.L.shim_reg(p.c.s, 5):#06x} stalled={p.c.stalled()} blocks={p.c.blocks()}"
+                    for p in (a, b))
     )
+
+
+def enable_fast(c):
+    """What linkhost.js does for a session: block and nybble-sync fast paths."""
+    c.fast(A("Serial_ExchangeBytes"), A("hSerialConnectionStatus"), A("hSerialIgnoringInitialData"))
+    c.fast_sync(A("Serial_SyncAndExchangeNybble"), A("wSerialExchangeNybbleSendData"),
+                A("wSerialExchangeNybbleReceiveData"), A("wSerialSyncAndExchangeNybbleReceiveData"),
+                A("wUnknownSerialCounter"))
 
 
 def saved_species(p):
@@ -231,12 +266,15 @@ def drop_mid_trade(host, guest, wire):
     before = {p.name: saved_species(p) for p in (host, guest)}
     assert before == {"host": host.species, "guest": guest.species}, before
     start = wire.messages
-    run_linked(host, guest, wire, lambda: wire.messages > start + 40, 30000)
+    # cut while both are choosing in the trade menu, before anything is saved
+    run_linked(host, guest, wire, lambda: all("exchange" in p.snaps for p in (host, guest)), 30000)
+    run_linked(host, guest, wire, lambda: False, 150, must=False)
+    assert host.mem("wPartySpecies") == host.species, "cut too late: the trade already happened"
     wire.q.clear()
     wire.deliver = lambda: None  # the network is gone
     wire.collect = lambda: [p.c.pop() for p in (host, guest)]
     run_linked(host, guest, wire, lambda: False, 700, must=False)  # the 10 s timeout
-    print(f"drop: cable cut after {wire.messages - start} trade messages; host stalled={host.c.stalled()}")
+    print(f"drop: cable cut in the trade menu ({wire.messages - start} messages in); host stalled={host.c.stalled()}")
     for p in (host, guest):
         p.c.plug(False)
         p.c.L.shim_reset(p.c.s)
@@ -249,6 +287,9 @@ def drop_mid_trade(host, guest, wire):
 
 def main():
     ap = argparse.ArgumentParser()
+    ap.add_argument("--fast", action="store_true", help="exchange Serial_ExchangeBytes blocks in one message")
+    ap.add_argument("--compare", action="store_true",
+                    help="trade once byte by byte and once with the fast path; the parsed data must match")
     ap.add_argument("--delay", type=int, default=3, help="one-way delay in frames")
     ap.add_argument("--stage", type=int, default=5, help="stop after this stage")
     ap.add_argument("--hostile", choices=("species", "name", "move", "count"),
@@ -257,7 +298,42 @@ def main():
     ap.add_argument("--together", action="store_true",
                     help="both talk to the receptionist at once; the guest is gated as the web page does")
     args = ap.parse_args()
+    if not args.compare:
+        r = run(args)
+        return 0 if r == 0 or isinstance(r, dict) else r
+    args.stage = 5
+    results = {}
+    for fast in (False, True):
+        args.fast = fast
+        print(f"--- {'fast path' if fast else 'byte lockstep'} ---")
+        results[fast] = run(args)
+    slow, quick = results[False], results[True]
+    for side in ("host", "guest"):
+        for when in ("exchange", "saved", "after trade"):
+            if when not in slow[side]:
+                continue
+            for field, value in slow[side][when].items():
+                # After the trade the game draws a fresh random list from the
+                # divider register; the fast path changes the timing, so that
+                # list differs by design. What matters is that the two
+                # consoles agree, checked below.
+                if when == "after trade" and field == "random numbers":
+                    continue
+                other = quick[side][when][field]
+                assert value == other, f"{side} {when} {field} differs:\n  lockstep {value.hex()}\n  fast     {other.hex()}"
+    for name, r in (("lockstep", slow), ("fast", quick)):
+        # the clocking side's list is the one both use
+        for when in ("exchange", "after trade"):
+            if when not in r["host"] or when not in r["guest"]:
+                continue
+            assert r["host"][when]["random numbers"] == r["guest"][when]["random numbers"], \
+                f"{name} {when}: the consoles hold different random lists"
+    print(f"compare: both consoles' parsed link data and parties match with and without the fast path "
+          f"(trade {slow['frames']} -> {quick['frames']} frames at {args.delay} frames delay)")
+    return 0
 
+
+def run(args):
     t0 = time.time()
     host = Player("host", K["RATTATA"])
     guest = Player("guest", K["PIDGEY"])
@@ -273,6 +349,10 @@ def main():
         guest.c.gate(A("hSerialConnectionStatus"), K["USING_EXTERNAL_CLOCK"])
     HS = 0xFFAA  # hSerialConnectionStatus
     assert A("hSerialConnectionStatus") == HS
+
+    if args.fast:
+        for p in (host, guest):
+            enable_fast(p.c)
 
     def mash_until(p, cond, key="a", every=24):
         while not cond():
@@ -367,6 +447,7 @@ def main():
         run_linked(host, guest, wire, refused_it, 60000)
         print(f"hostile {args.hostile}: the host refused the party and went back to the Cable Club room")
         return 0
+    table_tick = wire.tick
     stall = run_linked(host, guest, wire, parties_swapped, 60000)
     print(f"stage 4: parties exchanged after {wire.tick} ticks, {wire.messages} messages, stalls {stall}")
     for p in (host, guest):
@@ -406,8 +487,26 @@ def main():
 
     stall = run_linked(host, guest, wire, traded, 30000)
     print(f"stage 5: trade complete after {wire.tick} ticks, {wire.messages} messages, stalls {stall}")
+    # hands off (more presses could start a second trade); wait for the save
+    host.driver, guest.driver = host.wait(10**9), guest.wait(10**9)
+    run_linked(host, guest, wire,
+               lambda: saved_species(host) == guest.species and saved_species(guest) == host.species, 20000)
+    frames = wire.tick - table_tick
+    print(f"trade saved on both: {frames} frames (~{frames / 60:.0f} s at {args.delay} frames one-way delay) "
+          f"from using the table; fast path blocks {host.c.blocks()}+{guest.c.blocks()}, "
+          f"syncs {host.c.syncs()}+{guest.c.syncs()}")
     print(f"total {time.time() - t0:.1f}s")
-    return 0
+    for p in (host, guest):
+        p.snaps["saved"] = {"party": p.snapshot()["party"]}
+        assert "exchange" in p.snaps, f"{p.name}: trade menu hook never fired"
+    # the game re-exchanges after the trade and reopens the trade menu
+    # (byte by byte at long delays the original sync can miss the other
+    # side's nybble here and never finish: one reason for the fast path)
+    run_linked(host, guest, wire, lambda: all("after trade" in p.snaps for p in (host, guest)), 20000,
+               must=args.fast)
+    if not all("after trade" in p.snaps for p in (host, guest)):
+        print("the post-trade re-exchange did not finish byte by byte at this delay")
+    return {"host": host.snaps, "guest": guest.snaps, "frames": frames}
 
 
 if __name__ == "__main__":

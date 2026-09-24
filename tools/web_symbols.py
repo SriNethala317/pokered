@@ -22,7 +22,7 @@ from make_bps import VANILLA  # noqa: E402
 from rominspect import load_symbols  # noqa: E402
 
 # Bumped whenever the page-to-page protocol changes.
-PROTOCOL = 1
+PROTOCOL = 2  # 2: link fast paths (block and nybble-sync messages)
 
 RAM = [
     "wCurMap", "wYCoord", "wXCoord", "wWalkCounter", "wPlayerMovingDirection",
@@ -34,9 +34,12 @@ RAM = [
     "wSpritePlayerStateData2GrassPriority",
     "wIsInBattle", "wLinkState", "wWalkBikeSurfState", "wCurMapTileset",
     "wJoyIgnore", "wFontLoaded", "wPlayerName",
-    "hWY", "hSCX", "hSCY", "hSerialConnectionStatus",
+    "hWY", "hSCX", "hSCY", "hSerialConnectionStatus", "hSerialIgnoringInitialData",
+    "wSerialExchangeNybbleSendData", "wSerialExchangeNybbleReceiveData",
+    "wSerialSyncAndExchangeNybbleReceiveData", "wUnknownSerialCounter",
 ]
 ROM = ["RedSprite", "RedBikeSprite", "SeelSprite", "OverworldLoop",
+       "Serial_ExchangeBytes", "Serial_SyncAndExchangeNybble",
        "Serial_TryEstablishingExternallyClockedConnection"]
 
 

@@ -11,6 +11,8 @@
 
 #define LINK_QUEUE 1024  /* messages; a trade is ~650 bytes each way */
 #define HOOK_MAX 64
+#define SHIM_BLOCK_MAX 1024
+#define SHIM_BLOCK_QUEUE 4
 #define HOOK_QUEUE 64
 #define AUDIO_FRAMES 16384 /* stereo frames buffered, ~0.34 s at 48 kHz */
 /* A frame is 70224 dots = 140448 ticks of SameBoy's 8 MHz clock. If the LCD is
@@ -71,6 +73,29 @@ struct shim {
     uint16_t gate_addr;
     uint8_t gate_value;
     bool local; /* the transfer in flight is not going over the cable */
+
+    /* block fast path, see shim_link_fast() */
+    uint16_t fast_addr, fast_status_addr, fast_ignoring_addr;
+    bool block_pending; /* the hooked routine was just entered */
+    bool block_wait;    /* sent our block, waiting for the peer's */
+    uint16_t block_de, block_n;
+    uint8_t rx_block[SHIM_BLOCK_MAX];
+    unsigned rx_len;
+    bool rx_overflow;
+    /* blocks the peer sent that our game has not reached yet, oldest first:
+     * the peer can get a block (or two) ahead, and bytes it clocks after a
+     * block must still be answered meanwhile */
+    uint8_t peer_block[SHIM_BLOCK_QUEUE][SHIM_BLOCK_MAX];
+    unsigned peer_len[SHIM_BLOCK_QUEUE];
+    unsigned peer_head, peer_count;
+    uint32_t blocks;
+
+    /* nybble sync fast path, see shim_link_fast_sync() */
+    uint16_t sync_addr, sync_send, sync_recv, sync_result, sync_counter;
+    bool sync_pending, sync_wait;
+    uint8_t peer_nybbles[SHIM_BLOCK_QUEUE];
+    unsigned nyb_head, nyb_count;
+    uint32_t syncs;
 };
 
 /* ---------- queues ---------- */
@@ -185,6 +210,18 @@ static void on_exec(GB_gameboy_t *gb, uint16_t addr, uint8_t opcode)
 {
     (void)opcode;
     shim_t *s = S(gb);
+    if (addr == s->fast_addr && s->fast_addr && s->plugged) {
+        uint8_t st = GB_safe_read_memory(gb, s->fast_status_addr);
+        if (st == 1 || st == 2) s->block_pending = true;
+    }
+    if (addr == s->sync_addr && s->sync_addr && s->plugged) {
+        uint8_t st = GB_safe_read_memory(gb, s->fast_status_addr);
+        /* only untimed syncs: with the inactivity counter running (the
+         * receptionist's), keep the original loop and its timeout */
+        if ((st == 1 || st == 2) && !GB_safe_read_memory(gb, s->sync_counter) &&
+            !GB_safe_read_memory(gb, (uint16_t)(s->sync_counter + 1)))
+            s->sync_pending = true;
+    }
     if (!(s->hook_map[addr >> 3] & (1 << (addr & 7)))) return;
     int bank = -1;
     if (addr >= 0x4000 && addr < 0x8000) {
@@ -241,6 +278,11 @@ SHIM_API void shim_destroy(shim_t *s)
 
 static void reset_link_state(shim_t *s)
 {
+    s->block_pending = s->block_wait = false;
+    s->peer_head = s->peer_count = 0;
+    s->sync_pending = s->sync_wait = false;
+    s->nyb_head = s->nyb_count = 0;
+    s->rx_len = 0;
     s->stalled = s->reply_ready = s->in_transfer = s->expect_next_bit = false;
     s->bits = 0;
     s->out.head = s->out.tail = 0;
@@ -300,6 +342,32 @@ static void link_apply(shim_t *s, link_msg_t m)
         }
         return; /* a stray reply (e.g. after unplugging) is dropped */
     }
+    if (m.kind == SHIM_LINK_BLOCK) {
+        if (s->rx_len < SHIM_BLOCK_MAX) s->rx_block[s->rx_len++] = m.byte;
+        else s->rx_overflow = true;
+        return;
+    }
+    if (m.kind == SHIM_LINK_BLOCK_END) {
+        /* the length's low byte guards against a lost record */
+        if (s->plugged && s->fast_addr && !s->rx_overflow && (s->rx_len & 0xFF) == m.byte &&
+            s->peer_count < SHIM_BLOCK_QUEUE) {
+            unsigned slot = (s->peer_head + s->peer_count) % SHIM_BLOCK_QUEUE;
+            memcpy(s->peer_block[slot], s->rx_block, s->rx_len);
+            s->peer_len[slot] = s->rx_len;
+            s->peer_count++;
+            s->received++;
+        }
+        s->rx_len = 0;
+        s->rx_overflow = false;
+        return;
+    }
+    if (m.kind == SHIM_LINK_NYBBLE) {
+        if (s->plugged && s->sync_addr && s->nyb_count < SHIM_BLOCK_QUEUE) {
+            s->peer_nybbles[(s->nyb_head + s->nyb_count++) % SHIM_BLOCK_QUEUE] = m.byte;
+            s->received++;
+        }
+        return;
+    }
     if (m.kind != SHIM_LINK_XFER) return;
     s->received++;
     uint8_t sc = io_read(s, IO_SC);
@@ -343,6 +411,10 @@ SHIM_API void shim_link_plug(shim_t *s, int plugged)
         s->stalled = false;
         s->reply_ready = false;
         s->in.head = s->in.tail = 0;
+        s->block_wait = s->sync_wait = false; /* the page resets the game */
+        s->peer_head = s->peer_count = 0;
+        s->nyb_head = s->nyb_count = 0;
+        s->rx_len = 0;
     }
 }
 
@@ -373,7 +445,7 @@ SHIM_API int shim_link_pop_packed(shim_t *s)
 
 SHIM_API int shim_link_push(shim_t *s, uint8_t kind, uint8_t byte)
 {
-    if (kind != SHIM_LINK_XFER && kind != SHIM_LINK_REPLY) return -1;
+    if (kind < SHIM_LINK_XFER || kind > SHIM_LINK_NYBBLE) return -1;
     return q_push(&s->in, kind, byte) ? 0 : -1;
 }
 
@@ -382,18 +454,131 @@ SHIM_API uint32_t shim_link_bytes_received(shim_t *s) { return s->received; }
 
 /* ---------- emulation ---------- */
 
+/* ---------- block fast path ----------
+ * The hooked routine is Serial_ExchangeBytes (hl = send buffer, de = receive
+ * buffer, bc = length); its first instruction (ld a, 1) has just run. Send our
+ * whole buffer as one message and wait for the peer's, then leave what an
+ * ideal cable would: the receive buffer holds the peer's send buffer byte for
+ * byte, hl and de advanced by the length, bc = 0, a = 0 with Z set, the
+ * preamble flag cleared, and the routine returned from. The game's readers
+ * skip preamble and no-data bytes, so what they parse matches a byte-by-byte
+ * exchange (checked by test/netlink/linktest.py --compare). */
+static void block_start(shim_t *s)
+{
+    GB_registers_t *r = GB_get_registers(s->gb);
+    unsigned n = r->bc;
+    if (n == 0 || n > SHIM_BLOCK_MAX) return; /* unknown block: stay byte by byte */
+    for (unsigned i = 0; i < n; i++)
+        q_push(&s->out, SHIM_LINK_BLOCK, GB_safe_read_memory(s->gb, (uint16_t)(r->hl + i)));
+    q_push(&s->out, SHIM_LINK_BLOCK_END, n & 0xFF);
+    s->sent++;
+    s->blocks++;
+    s->block_de = r->de;
+    s->block_n = n;
+    s->block_wait = true;
+}
+
+static void block_finish(shim_t *s)
+{
+    GB_registers_t *r = GB_get_registers(s->gb);
+    unsigned n = s->block_n;
+    const uint8_t *peer = s->peer_block[s->peer_head];
+    unsigned peer_len = s->peer_len[s->peer_head];
+    for (unsigned i = 0; i < n; i++) {
+        uint8_t v = i < peer_len ? peer[i] : 0xFE;
+        GB_write_memory(s->gb, (uint16_t)(s->block_de + i), v);
+    }
+    r->hl += n;
+    r->de = s->block_de + n;
+    r->bc = 0;
+    r->af = 0x0080; /* a = 0, Z set */
+    if (s->fast_ignoring_addr) GB_write_memory(s->gb, s->fast_ignoring_addr, 0);
+    uint16_t sp = r->sp;
+    r->pc = GB_safe_read_memory(s->gb, sp) | (GB_safe_read_memory(s->gb, (uint16_t)(sp + 1)) << 8);
+    r->sp = sp + 2;
+    s->block_wait = false;
+    s->peer_head = (s->peer_head + 1) % SHIM_BLOCK_QUEUE;
+    s->peer_count--;
+}
+
+/* Serial_SyncAndExchangeNybble, entered with its first instruction run:
+ * both sides have sent their nybble; finish as the loop would have. */
+static void sync_finish(shim_t *s)
+{
+    GB_registers_t *r = GB_get_registers(s->gb);
+    uint8_t v = s->peer_nybbles[s->nyb_head] & 0x0F;
+    s->nyb_head = (s->nyb_head + 1) % SHIM_BLOCK_QUEUE;
+    s->nyb_count--;
+    GB_write_memory(s->gb, s->sync_recv, v);
+    GB_write_memory(s->gb, s->sync_result, v);
+    r->af = (uint16_t)(v << 8) | 0x80; /* a = nybble, Z set as after the loop */
+    uint16_t sp = r->sp;
+    r->pc = GB_safe_read_memory(s->gb, sp) | (GB_safe_read_memory(s->gb, (uint16_t)(sp + 1)) << 8);
+    r->sp = sp + 2;
+    s->sync_wait = false;
+}
+
+SHIM_API void shim_link_fast_sync(shim_t *s, uint16_t sync_addr, uint16_t send_addr, uint16_t recv_addr,
+                                  uint16_t result_addr, uint16_t counter_addr)
+{
+    s->sync_addr = sync_addr;
+    s->sync_send = send_addr;
+    s->sync_recv = recv_addr;
+    s->sync_result = result_addr;
+    s->sync_counter = counter_addr;
+    s->sync_pending = s->sync_wait = false;
+    s->nyb_head = s->nyb_count = 0;
+}
+
+SHIM_API uint32_t shim_link_syncs(shim_t *s) { return s->syncs; }
+
+SHIM_API void shim_link_fast(shim_t *s, uint16_t exchange_bytes_addr, uint16_t status_addr, uint16_t ignoring_addr)
+{
+    s->fast_addr = exchange_bytes_addr;
+    s->fast_status_addr = status_addr;
+    s->fast_ignoring_addr = ignoring_addr;
+    s->block_pending = s->block_wait = false;
+    s->peer_head = s->peer_count = 0;
+    s->sync_pending = s->sync_wait = false;
+    s->nyb_head = s->nyb_count = 0;
+    s->rx_len = 0;
+}
+
+SHIM_API uint32_t shim_link_blocks(shim_t *s) { return s->blocks; }
+
 SHIM_API int shim_run_frame(shim_t *s)
 {
     unsigned ticks = 0;
     s->vblank = false;
     for (;;) {
         if (s->in.head != s->in.tail) link_drain(s);
+        if (s->block_wait) {
+            if (!s->peer_count) return SHIM_STALLED;
+            block_finish(s);
+        }
+        if (s->sync_wait) {
+            if (!s->nyb_count) return SHIM_STALLED;
+            sync_finish(s);
+        }
         if (s->stalled) return SHIM_STALLED;
         if (s->hook_break) {
             s->hook_break = false;
             return SHIM_HOOK;
         }
         ticks += GB_run(s->gb);
+        if (s->block_pending) {
+            s->block_pending = false;
+            block_start(s);
+            continue;
+        }
+        if (s->sync_pending) {
+            s->sync_pending = false;
+            q_push(&s->out, SHIM_LINK_NYBBLE, GB_safe_read_memory(s->gb, s->sync_send));
+            s->sent++;
+            s->syncs++;
+            s->sync_wait = true;
+            continue;
+        }
         if (s->vblank || ticks >= FRAME_TICK_CAP) break;
     }
     s->frames++;
