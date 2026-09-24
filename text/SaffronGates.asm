@@ -33,6 +33,8 @@ _SaffronGateGuardYouCanGoOnThroughText::
 	done
 
 _SaffronGateGuardThanksForTheDrinkText::
-	text "Hi, thanks for"
-	line "the cool drinks!"
+	text "That broadcast"
+	line "has us all on"
+	cont "edge. Go on"
+	cont "through, kid."
 	done

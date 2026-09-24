@@ -6,6 +6,8 @@ StartMenu_Pokedex::
 	call UpdateSprites
 	jp RedisplayStartMenu
 
+DEF SURF_BADGES_NEEDED EQU 3
+
 StartMenu_Pokemon::
 	ld a, [wPartyCount]
 	and a
@@ -150,16 +152,20 @@ StartMenu_Pokemon::
 	set BIT_UNKNOWN_4_1, [hl]
 	jp StartMenu_Pokemon
 .cut
-	bit BIT_CASCADEBADGE, a
-	jp z, .newBadgeRequired
+	; Cut needs no badge: Kanto opens up after Brock (docs/open-world-plan.md)
 	predef UsedCut
 	ld a, [wActionResultOrTookBattleTurn]
 	and a
 	jp z, .loop
 	jp CloseTextDisplay
 .surf
-	bit BIT_SOULBADGE, a
-	jp z, .newBadgeRequired
+	; Surf needs any three badges rather than the Soul Badge, so Cinnabar and
+	; Seafoam do not have to wait for Koga (docs/open-world-plan.md)
+	ld hl, wObtainedBadges
+	ld b, 1
+	call CountSetBits
+	cp SURF_BADGES_NEEDED
+	jp c, .newBadgeRequired
 	farcall IsSurfingAllowed
 	ld hl, wStatusFlags1
 	bit BIT_SURF_ALLOWED, [hl]

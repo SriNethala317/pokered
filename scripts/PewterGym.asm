@@ -65,6 +65,9 @@ PewterGymScriptReceiveTM34:
 	set BIT_BOULDERBADGE, [hl]
 	ld hl, wBeatGymFlags
 	set BIT_BOULDERBADGE, [hl]
+	; Kanto opens up after Brock: Saffron's guards let you through from now on
+	ld hl, wStatusFlags1
+	set BIT_GAVE_SAFFRON_GUARDS_DRINK, [hl]
 
 	; the first badge unlocks Resonance, see engine/battle/resonance.asm
 	callfar UnlockResonance

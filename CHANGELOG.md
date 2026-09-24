@@ -207,8 +207,16 @@ Integration build sha1 `34dcd2ae05d0e0c55304cb5f9f7ee403961dbde6`.
   - The rival's SS Anne, Pokemon Tower and Silph Co. battles follow which one
     each is.
   - Brock, Giovanni and every ordinary trainer are as they were.
-  This is the groundwork for opening up gyms 2 to 7 in any order. The map
-  gates themselves are not changed yet.
+- **Kanto opens up after Brock.** Gyms 2 to 7 can be done in any order:
+  - Cut needs no badge. A Grass or Bug partner with Bond 120, or HM01, clears
+    the Route 9 tree from the start.
+  - Saffron's gate guards let you through once you have Brock's badge. "That
+    broadcast has us all on edge. Go on through, kid." The drink is no longer
+    needed.
+  - Surf needs any three badges instead of the Soul Badge.
+  - Kept as they were: Brock first, Giovanni's door (7 badges), the League,
+    the Bicycle for Cycling Road, and Strength for Victory Road. The Snorlax
+    still need the Poke Flute until the Frenzy fights are built.
 - **Field abilities through Bond, no HM needed.** A Pokemon with Bond 120 or
   more lists a field ability its type suits, even if it never learned the
   move:
@@ -520,6 +528,11 @@ New checks under `test/`, all run against each build:
   name unwritten, which the ROM rightly refuses). `test/web/*.mjs` test the
   page's own code in node, including a full trade relayed through a third
   player.
+- `gatecheck.py` - uses CUT and SURF from the party menu in the debug new
+  game and reads the message. CUT with no badges gets past the badge check,
+  SURF with two badges is refused, and SURF with three (none of them the Soul
+  Badge) gets past. The Saffron guards' flag is set in Pewter Gym's badge
+  script and is not walked in a test.
 - `scalecheck.py` - real trainer battles at chosen badge counts, reading the
   enemy team's levels: Sabrina at 2 and 5 badges, Misty at 6, the SS Anne rival
   at 5, a trainer in Misty's gym at 6, and Brock and a Youngster unchanged.
