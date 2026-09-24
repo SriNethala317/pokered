@@ -5,7 +5,7 @@ build has sha1 `ea9bcae617fdf159b045185467ae58b2e4a48b9a`.
 
 ## Unreleased
 
-Integration build sha1 `493aea78c62e631b76d3973f106f9ffcabf722aa`.
+Integration build sha1 `34dcd2ae05d0e0c55304cb5f9f7ee403961dbde6`.
 
 ### Action commands
 
@@ -651,8 +651,8 @@ New checks under `test/`, all run against each build:
   input, for reading the ROM through the linker's own symbol names, and for
   dropping straight into the debug build's test battle.
 
-Current headroom: ROM0 118 bytes free (-20), ROMX 175,746 free (+14,047:
-bank $2D, previously unused, now holds the new combat code and has 14,984
-bytes left of its 16,384), WRAM0 30 free (unchanged), HRAM 0 free (unchanged),
-SRAM 7,646 free (unchanged). No change in this release consumes any RAM: the
-action command state lives in padding that was already there.
+Current headroom: ROM0 118 bytes free (-38 against vanilla), ROMX 171,679
+free (bank $2D holds all the new combat code). WRAM0 25 free: 5 bytes went to
+the Field States and Improvise, and the rest of the new state lives in padding
+that was already cleared with the battle data. HRAM 0 free (unchanged), SRAM
+7,646 free (unchanged). Bond costs nothing: it lives in the catch rate byte.
