@@ -146,8 +146,9 @@ New checks under `test/`, all run against each build:
   saves a screenshot, and decodes the stats box straight out of `wTileMap` so the
   labels and numbers can be asserted rather than eyeballed. The party Pokemon is
   turned into an Alakazam first, because its two special factors differ, so a
-  swapped or unscaled SPA/SPD row fails. It then wins a battle one experience
-  point short of a level and checks the level-up stats box the same way.
+  swapped or unscaled SPA/SPD row fails. It then checks the level-up stats box
+  through both of its callers: winning a battle one experience point short of a
+  level, and using a Rare Candy from the debug new game's bag.
 - `navigate.py`, `rominspect.py`, `debugbattle.py` - shared helpers for scripted
   input, for reading the ROM through the linker's own symbol names, and for
   dropping straight into the debug build's test battle.

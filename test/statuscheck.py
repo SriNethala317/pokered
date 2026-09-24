@@ -1,15 +1,18 @@
 """Open the stats boxes, photograph them, and read the text back off them.
 
-There are two stats boxes: the one on the status screen, and the one drawn over
-the battle when a Pokemon grows a level. They share their printing code but not
-their position, so both are checked.
+There are two stats boxes: the one on the status screen, and the one drawn when
+a Pokemon grows a level. They share their printing code but not their position,
+so both are checked. The level-up box has two callers, a battle win and a Rare
+Candy, and both are exercised.
 
 Walking a fresh save far enough to own a Pokemon is the routing problem the
 run-to-credits harness is still stuck on, so this borrows the debug build's test
 battle instead: it builds a real level 20 Rhydon with `AddPartyMon`, which is a
 genuine party Pokemon read by the real status screen code. From the battle menu
 the route is PKMN -> the Pokemon -> STATS. For the level-up box the same
-Rhydon is left one experience point short of level 21 and wins a turn.
+Rhydon is left one experience point short of level 21 and wins a turn. For the
+Rare Candy the debug build's new game is started instead, which hands out 99
+of them and a level 90 Exeggutor.
 
 Two outputs per box, and the second is the useful one. A PNG for a person to
 look at, and a decoded copy of the box read straight out of `wTileMap`, so the
@@ -18,12 +21,13 @@ labels and the numbers can be asserted instead of eyeballed.
 Usage:
     python test/statuscheck.py pokeblue_debug.gbc pokeblue_debug.sym [shot.png]
 
-The level-up screenshot is written next to the first, with `_levelup` added.
+The other screenshots are written next to the first, with `_levelup` and
+`_candy` added.
 """
 import sys
 
 from rominspect import load_symbols
-from debugbattle import NotReached, enter, tap, word, write_word
+from debugbattle import NotReached, boot_to_debug_menu, enter, tap, word, write_word
 
 SCREEN_WIDTH = 20
 
@@ -67,6 +71,14 @@ PARTY_STATS = {
     "SPA": "wPartyMon1Special",
     "SPD": "wPartyMon1Special",
 }
+
+# Exeggutor's factors are 21 attacking and 11 defending, in sixteenths, so the
+# Rare Candy box proves the scaling on the level-up layout as well.
+EXEGGUTOR_FACTORS = {"SPA": 21, "SPD": 11}
+
+# Frames of A presses allowed to get through the debug new game's intro and
+# the Oak speech before the START menu is expected to open.
+INTRO_TAPS = 400
 
 
 def decode(tile):
@@ -247,12 +259,100 @@ def check_level_up_box(rom_path, sym_path, shot):
     return None
 
 
+def check_rare_candy_box(rom_path, sym_path, shot):
+    """Return None on success, or the reason for failure."""
+    symbols = load_symbols(sym_path)
+    tilemap = symbols["wTileMap"][1]
+    level = symbols["wPartyMon1Level"][1]
+
+    try:
+        p, at = boot_to_debug_menu(rom_path, sym_path)
+    except NotReached as e:
+        return str(e)
+
+    def screen():
+        return "\n".join(read_screen(p, tilemap))
+
+    # The second debug menu entry starts a new game with the debug party and
+    # bag. It still runs the intro, so A is pressed through it, trying START
+    # every so often until the START menu opens in the overworld.
+    tap(p, "down", hold=8, release=24)
+    tap(p, "a", hold=8, release=40)
+    in_world = False
+    for n in range(INTRO_TAPS):
+        tap(p, "a", hold=4, release=20)
+        if n % 10 == 9:
+            tap(p, "start", hold=6, release=40)
+            if "ITEM" in screen():
+                in_world = True
+                break
+    if not in_world:
+        p.stop(save=False)
+        return "the debug new game never reached the overworld"
+
+    # ITEM is the third START menu entry and RARE CANDY the fifth item in the
+    # bag. USE is the first choice, and Exeggutor leads the party.
+    tap(p, "down", hold=6, release=20)
+    tap(p, "down", hold=6, release=20)
+    tap(p, "a", hold=6, release=60)
+    for _ in range(4):
+        tap(p, "down", hold=6, release=20)
+    if "RARE CANDY" not in screen():
+        p.stop(save=False)
+        return "the bag did not show a RARE CANDY"
+    tap(p, "a", hold=6, release=40)
+    tap(p, "a", hold=6, release=60)
+    before = p.memory[level]
+    tap(p, "a", hold=6, release=0)
+
+    # The party menu announces the new level and waits for a press before the
+    # stats box goes up, so A is pressed once, after the level has changed.
+    drawn = False
+    pressed = False
+    for frame in range(LEVEL_UP_FRAMES):
+        p.tick()
+        if "ATK" in read_screen(p, tilemap)[LEVEL_UP_ROWS[1]]:
+            drawn = True
+            break
+        if not pressed and frame > 200 and p.memory[level] != before:
+            tap(p, "a", hold=4, release=4)
+            pressed = True
+    for _ in range(20):
+        p.tick()
+
+    p.screen.image.save(shot)
+    rows = read_screen(p, tilemap)
+    stats = {label: word(p, symbols[name][1]) for label, name in PARTY_STATS.items()}
+    after = p.memory[level]
+    p.stop(save=False)
+
+    # The scaling rounds down, the same as the damage code's.
+    for label, factor in EXEGGUTOR_FACTORS.items():
+        stats[label] = stats[label] * factor // 16
+
+    print(f"screenshot written to {shot}")
+    print()
+    print_box("Rare Candy level-up box", rows, LEVEL_UP_ROWS, LEVEL_UP_COLS)
+
+    if after != before + 1:
+        return f"the Rare Candy took the Pokemon from level {before} to {after}"
+    if not drawn:
+        return "the Rare Candy stats box never appeared"
+    values = read_values(rows, LEVEL_UP_ROWS, LEVEL_UP_COLS)
+    for label, want in stats.items():
+        got = values.get(label)
+        if got != want:
+            return f"Rare Candy box shows {label} {got}, expected {want}"
+    return None
+
+
 def main():
     rom_path = sys.argv[1] if len(sys.argv) > 1 else "pokeblue_debug.gbc"
     sym_path = sys.argv[2] if len(sys.argv) > 2 else "pokeblue_debug.sym"
     shot = sys.argv[3] if len(sys.argv) > 3 else "status.png"
     stem, dot, ext = shot.rpartition(".")
     level_up_shot = f"{stem}_levelup.{ext}" if dot else f"{shot}_levelup"
+    candy_shot = f"{stem}_candy.{ext}" if dot else f"{shot}_candy"
 
     failure = check_status_screen(rom_path, sym_path, shot)
     if failure:
@@ -262,8 +362,13 @@ def main():
     if failure:
         print(f"FAIL: {failure}")
         return 1
+    failure = check_rare_candy_box(rom_path, sym_path, candy_shot)
+    if failure:
+        print(f"FAIL: {failure}")
+        return 1
     print(f"PASS: both stats boxes show {len(EXPECTED_LABELS)} stat rows, SPA/SPD "
-          f"carry the scaled values, and the level-up box matches the party data")
+          f"carry the scaled values, and the level-up box is right after a "
+          f"battle win and after a Rare Candy")
     return 0
 
 

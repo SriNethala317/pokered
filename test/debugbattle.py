@@ -67,8 +67,8 @@ def tap(p, button, hold=4, release=8):
         p.tick()
 
 
-def enter(rom_path, sym_path):
-    """Boot the debug ROM and return (pyboy, addresses) inside a live battle."""
+def boot_to_debug_menu(rom_path, sym_path):
+    """Boot the debug ROM and return (pyboy, addresses) at the debug menu."""
     symbols = load_symbols(sym_path)
     at = {k: symbols[k][1] for k in WANTED if k in symbols}
 
@@ -98,6 +98,12 @@ def enter(rom_path, sym_path):
     if not reached:
         p.stop(save=False)
         raise NotReached("never reached the debug menu")
+    return p, at
+
+
+def enter(rom_path, sym_path):
+    """Boot the debug ROM and return (pyboy, addresses) inside a live battle."""
+    p, at = boot_to_debug_menu(rom_path, sym_path)
 
     # FIGHT is the first entry and the cursor starts on it. TestBattle builds
     # the party with AddPartyMon, which stops on a "give a nickname?" prompt, so
