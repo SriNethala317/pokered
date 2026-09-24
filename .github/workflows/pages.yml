@@ -51,7 +51,7 @@ jobs:
           "$HOME/emsdk/emsdk" activate ${{ env.emsdk_version }}
 
       - name: Fetch the SameBoy core
-        run: web/fetch_core.sh
+        run: sh web/fetch_core.sh
 
       - name: Build
         run: |
