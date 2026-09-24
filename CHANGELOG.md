@@ -192,6 +192,26 @@ Integration build sha1 `493aea78c62e631b76d3973f106f9ffcabf722aa`.
     - the unlock is at Brock;
     - the final battle theme plays while it lasts.
 
+### Trainer Dodge Phase (prototype, Brock)
+
+- **Brock makes you dodge in person.** The first damaging attack of each of
+  his Pokemon opens a small DODGE! arena over the battle screen for two and a
+  half seconds.
+  - You are the ♂, moved a tile at a time with the D-pad. A ▼ warns where a
+    rock will fall, and then it falls row by row.
+  - Each rock that hits you costs a quarter of your trainer HP bar, the one
+    Resonance uses. Running it dry breaks Resonance and costs your next turn.
+  - Getting through untouched halves the attack (DODGED!) and adds 3 to the
+    Resonance meter.
+  - It happens twice at most in Brock's battle, never against wild Pokemon or
+    ordinary trainers, and never with action commands Off. Assist always uses
+    the gentlest speed.
+  - Rocks fall faster with more badges (`DodgeRamp`). The screen comes back
+    exactly as it was.
+  - It needs no new RAM beyond 4 bytes of padding, because the rocks live in
+    the tilemap itself.
+  - See `docs/dodge-phase-design.md`. The other bosses' patterns are next.
+
 ### Battle mechanics
 
 - **Each move now has its own damage category.** In vanilla a move's type alone
@@ -335,6 +355,15 @@ New checks under `test/`, all run against each build:
   `pokered_debug.gbc`. Blue's targets are still in the Makefile but are no
   longer built, patched or tested, and every battle check runs on the Red
   debug build. `make bps` writes `pokered.bps` only.
+- `dodgecheck.py` - fights Brock (a real trainer battle) and forces each
+  outcome through the phase's own routines:
+  - untouched gives DODGED!, half damage and a meter of 3;
+  - one hit costs 6 and the attack lands in full;
+  - running the bar dry gives BROKEN! and a lost turn;
+  - the arena opens exactly once per Brock Pokemon;
+  - the screen is restored byte for byte;
+  - it never opens against a wild Pokemon, a Youngster or with Off;
+  - it takes at most 160 frames.
 - `resonancecheck.py` - staged turns in the debug battle, with three badges.
   - Nothing fills or shows before the unlock.
   - The meter fills by 2 and 1, and Bond by 1 on PERFECT and COUNTER only.

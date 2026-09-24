@@ -54,6 +54,7 @@ DEF ACTION_BUTTON_CHAR     EQU '<NULL>'
 	const ACTION_BADGE_BROKEN     ; 9 Resonance broke
 	const ACTION_BADGE_STUNNED    ; 10 the turn it cost
 	const ACTION_BADGE_RESONANCE  ; 11 Resonance started
+	const ACTION_BADGE_DODGED     ; 12 a Dodge Phase without a scratch
 
 ; wActionCommandCue
 	const_def 1
@@ -202,6 +203,8 @@ ArmActionCommand:
 
 ; the lead-in: a frame more for every 32 power, so big moves wind up
 	pop bc
+	call TryDodgePhase
+	ret c ; a boss made you dodge instead
 	ld a, b
 	swap a
 	srl a
@@ -588,6 +591,10 @@ ApplyActionCommand:
 	ld [hl], d
 	callfar DrawEnemyHUDAndHPBar
 .braceBadge
+	ld a, [wActionCommandFoe]
+	bit ACTION_FOE_DODGED, a
+	ld a, ACTION_BADGE_DODGED
+	jr nz, .showBadge
 	ld a, [wActionCommandResult]
 	add ACTION_BADGE_BRACED - ACTION_RESULT_GOOD
 .showBadge
@@ -990,6 +997,7 @@ ActionBadgeStrings:
 	dw .broken
 	dw .stunned
 	dw .resonance
+	dw .dodged
 
 .early   db "TOO SOON@"
 .great   db "GREAT!@"
@@ -1002,3 +1010,4 @@ ActionBadgeStrings:
 .broken    db "BROKEN!@"
 .stunned   db "STUNNED@"
 .resonance db "RESONANCE!@"
+.dodged    db "DODGED!@"

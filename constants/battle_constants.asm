@@ -149,6 +149,7 @@ DEF EFFECTIVENESS_MASK EQU %01111111
 	const_def
 	const ACTION_FOE_FEINT ; 0 a false cue comes first
 	const ACTION_FOE_TIMED ; 1 the trainer times this attack too
+	const ACTION_FOE_DODGED ; 2 a Dodge Phase stood in, and you were not hit
 
 ; wResonanceFlags, see engine/battle/resonance.asm
 DEF RESONANCE_REFUNDS_MASK EQU %111 ; turns the chain has given back

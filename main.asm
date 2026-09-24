@@ -361,3 +361,4 @@ SECTION "Resonance Engine", ROMX
 INCLUDE "engine/battle/action_commands.asm"
 INCLUDE "engine/pokemon/bond.asm"
 INCLUDE "engine/battle/resonance.asm"
+INCLUDE "engine/battle/dodge_phase.asm"

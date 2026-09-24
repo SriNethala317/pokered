@@ -543,8 +543,12 @@ wResonanceTurns:: db
 ; how much of the trainer's HP bar is gone, 0 to TRAINER_MAX_HP
 wTrainerPain:: db
 wResonanceFlags:: db
-
-	ds 4
+; the Dodge Phase, see engine/battle/dodge_phase.asm
+wDodgeX:: db
+wDodgeY:: db
+wDodgeHits:: db
+; one bit per enemy party slot: its Pokemon has already made you dodge
+wDodgeDone:: db
 wMiscBattleDataEnd::
 ENDU
 
