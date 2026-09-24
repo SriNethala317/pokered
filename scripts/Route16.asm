@@ -201,8 +201,10 @@ Route16Biker6AfterBattleText:
 	text_end
 
 Route16SnorlaxText:
-	text_far _Route16Text7
-	text_end
+	; the broadcast has it frantic: calm it, or fight it (engine/events/frenzy.asm)
+	text_asm
+	callfar Route16Frenzy
+	jp TextScriptEnd
 
 Route16SnorlaxWokeUpText:
 	text_far _Route16SnorlaxWokeUpText

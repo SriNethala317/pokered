@@ -154,10 +154,14 @@ AddDodgeMeterBonus:
 	ret
 
 DodgePhase:
+	call GetDodgePattern
+	; fallthrough
+
+; a = the pattern. Frenzy bosses come in here with their own.
+DodgePhaseWithPattern:
+	ld [wDodgePattern], a
 	xor a
 	ld [wActionCommandState], a ; no window ticks while the phase runs
-	call GetDodgePattern
-	ld [wDodgePattern], a
 	ldh a, [hAutoBGTransferEnabled]
 	push af
 	call SaveScreenTilesToBuffer2
@@ -561,6 +565,9 @@ CheckDodgeHit:
 
 ; the trainer's bar, under the arena
 DrawDodgeBar:
+	ld a, [wIsInBattle]
+	and a
+	jr z, DrawDodgeHitsLeft
 	hlcoord DODGE_ARENA_X, DODGE_ARENA_Y + DODGE_ARENA_H + 1
 	ld a, [wTrainerPain]
 	cpl
@@ -585,6 +592,31 @@ DrawDodgeBar:
 	dec d
 	jr nz, .segment
 	ld [hl], $6d
+	ret
+
+; Outside battle the HP bar's tiles belong to the map's tileset, so a Frenzy
+; shows the hits the trainer can still take in plain text: "HP ×4".
+DrawDodgeHitsLeft:
+	ld a, [wTrainerPain]
+	cpl
+	add TRAINER_MAX_HP + 1 ; = TRAINER_MAX_HP - pain
+	ld b, -1
+.count
+	inc b
+	sub DODGE_HIT_PAIN
+	jr nc, .count
+	hlcoord DODGE_ARENA_X, DODGE_ARENA_Y + DODGE_ARENA_H + 1
+	ld a, 'H'
+	ld [hli], a
+	ld a, 'P'
+	ld [hli], a
+	ld a, ' '
+	ld [hli], a
+	ld a, '×'
+	ld [hli], a
+	ld a, b
+	add '0'
+	ld [hl], a
 	ret
 
 DodgeTitleText:

@@ -194,6 +194,25 @@ Integration build sha1 `34dcd2ae05d0e0c55304cb5f9f7ee403961dbde6`.
     - the unlock is at Brock;
     - the final battle theme plays while it lasts.
 
+### Frenzy bosses: the Snorlax on Routes 12 and 16
+
+- **The Tower's broadcast has the Snorlax frantic.** Talking to one starts a
+  Frenzy on the spot. It thrashes, and a DODGE! arena opens over the map with
+  body slams, warned twice.
+  - Each round you get through untouched calms it a little; three calm it for
+    good. After each round you choose: keep calming it, or fight it in the
+    usual battle.
+  - Getting hit costs your trainer HP, shown outside battle as "HP ×4". Run
+    out and you back away to try again.
+  - Once calm, it can join you (level 30). Or it stays and leaves you a Rare
+    Candy.
+  - Either way the road is clear, and calming it sets its own event
+    (`EVENT_CALMED_ROUTE12/16_SNORLAX`) so later dialogue can remember.
+  - The Poke Flute still wakes it straight into the vanilla battle.
+- **How it works:** it reuses the Dodge Phase with a new entry point. It puts
+  the map's sprites away, loads the font and raises the window for each round,
+  and restores them all afterwards.
+
 ### Rival Sync (story: the Sync Collar)
 
 - **The rival's collar forces a Resonance.** From the SS Anne on, when a rival
@@ -231,7 +250,7 @@ Integration build sha1 `34dcd2ae05d0e0c55304cb5f9f7ee403961dbde6`.
   - Surf needs any three badges instead of the Soul Badge.
   - Kept as they were: Brock first, Giovanni's door (7 badges), the League,
     the Bicycle for Cycling Road, and Strength for Victory Road. The Snorlax
-    still need the Poke Flute until the Frenzy fights are built.
+    no longer need the Poke Flute: calm or fight them (see Frenzy bosses).
 - **Field abilities through Bond, no HM needed.** A Pokemon with Bond 120 or
   more lists a field ability its type suits, even if it never learned the
   move:
@@ -543,6 +562,12 @@ New checks under `test/`, all run against each build:
   name unwritten, which the ROM rightly refuses). `test/web/*.mjs` test the
   page's own code in node, including a full trade relayed through a third
   player.
+- `frenzycheck.py` - calls Route 12's Frenzy from the overworld by faking a
+  call frame, and forces each round's outcome:
+  - three clean rounds calm it: both events set, and YES adds Snorlax (to the
+    box, as the debug party is full), while NO gives a Rare Candy;
+  - NO to keep calming sets up the usual battle and nothing else;
+  - being hit until worn out sets nothing.
 - `rivalcheck.py` - the SS Anne rival below half HP at 8 badges:
   - FOE SYNC!, then exactly two x1.5 attacks, then FOE STUN and a lost turn;
   - never twice for the same Pokemon, no extra text, and never for a

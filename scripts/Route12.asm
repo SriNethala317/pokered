@@ -97,8 +97,10 @@ Route12TrainerHeader6:
 	db -1 ; end
 
 Route12SnorlaxText:
-	text_far _Route12SnorlaxText
-	text_end
+	; the broadcast has it frantic: calm it, or fight it (engine/events/frenzy.asm)
+	text_asm
+	callfar Route12Frenzy
+	jp TextScriptEnd
 
 Route12SnorlaxWokeUpText:
 	text_far _Route12SnorlaxWokeUpText
