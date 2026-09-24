@@ -4343,6 +4343,16 @@ ScaleSpecialDefenseBC:
 	pop hl
 	ret
 
+ScaleSpecialStatPredef:
+; The status screen has to show the same two numbers the damage code works
+; with, and it lives in another bank. A far call cannot be used here because it
+; needs hl for the jump, and hl is how the stat is passed in and handed back,
+; so this is reached as a predef instead.
+; d = species, e = which factor, hl = the stored Special. Returns hl.
+	call GetPredefRegisters
+	ld a, d
+	; fallthrough
+
 ScaleSpecialStat:
 ; hl = hl * SpecialSplitFactors[a][e] / 16, capped at MAX_STAT_VALUE.
 	push bc

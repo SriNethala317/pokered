@@ -32,24 +32,6 @@ Fixing it properly means routing fixed-damage moves through the type chart for
 the immunity and effectiveness check while keeping their damage fixed. That is
 an engine change and was deliberately not attempted alongside the data change.
 
-### The status screen still shows a single SPECIAL
-
-**Severity:** wrong information shown to the player
-**Found:** while splitting Special into an attacking and a defending role
-**Status:** open, needs a screen layout change
-
-Damage now scales one stored Special stat by a per-species factor, so a
-Pokemon's real special attack and special defence differ. The status screen
-still shows one SPECIAL row holding the unscaled stored value, which is the
-truth for no species whose two factors differ, and that is 110 of them.
-
-Fixing it means finding room for a fifth stat row. The stats box is eight rows
-tall starting at row 8 and the four existing rows are spaced two rows apart, so
-a fifth row does not fit without reworking the spacing and the box height. That
-is a visual change, and there is currently no harness that can open the status
-screen and take a screenshot, so it would ship unverified. It is deliberately
-left for the Pallet-to-Brock tuning pass, where the screen gets looked at.
-
 ### Special split is applied at damage time, not stored
 
 **Severity:** balance

@@ -5,7 +5,7 @@ build has sha1 `ea9bcae617fdf159b045185467ae58b2e4a48b9a`.
 
 ## Unreleased
 
-Integration build sha1 `785a43df8330e43cadc2cf0d5308c7f1f6efff1a`.
+Integration build sha1 `12c5666d59843b83594a294667e63b7e5d69d39c`.
 
 ### Battle mechanics
 
@@ -37,9 +37,17 @@ Integration build sha1 `785a43df8330e43cadc2cf0d5308c7f1f6efff1a`.
   left exactly as it was; 110 of the 190 species are reshaped.
 
   This is a scaling layer rather than a seventh stat: stat experience, DVs and
-  the badge boost still feed one stored Special, and the status screen still
-  shows that single number. Both limitations are recorded in `BUGS.md`. A real
-  stored stat needs about 68 bytes of working RAM and there are 30.
+  the badge boost still feed one stored Special. That limitation is recorded in
+  `BUGS.md`. A real stored stat needs about 68 bytes of working RAM and there
+  are 30.
+
+- **The status screen shows special attack and special defence separately.**
+  It used to show one SPECIAL row holding the unscaled stored value, which was
+  wrong for every species whose two roles differ. It now shows SPA and SPD
+  worked out with the same per-species factor the damage code uses. To fit a
+  fifth row into the same box, each label now sits on the same row as its value
+  and the labels are shortened to ATK, DEF, SPE, SPA and SPD. The level-up stats
+  box uses the same layout.
 
 - **Wrap, Bind, Fire Spin and Clamp no longer take the target's turns away.**
   In vanilla a trapping move removes the opponent's move menu entirely for the
@@ -136,13 +144,14 @@ New checks under `test/`, all run against each build:
   branch, which is the kind of change that fails silently.
 - `statuscheck.py` - opens the status screen from the debug build's test battle,
   saves a screenshot, and decodes the stats box straight out of `wTileMap` so the
-  labels and numbers can be asserted rather than eyeballed. Until now nothing in
-  the project could look at a screen, which is why the status screen bug had gone
-  unfixed.
+  labels and numbers can be asserted rather than eyeballed. The party Pokemon is
+  turned into an Alakazam first, because its two special factors differ, so a
+  swapped or unscaled SPA/SPD row fails. It then wins a battle one experience
+  point short of a level and checks the level-up stats box the same way.
 - `navigate.py`, `rominspect.py`, `debugbattle.py` - shared helpers for scripted
   input, for reading the ROM through the linker's own symbol names, and for
   dropping straight into the debug build's test battle.
 
-Current headroom: ROM0 138 bytes free (-18), ROMX 161,133 free (-566), WRAM0 30
+Current headroom: ROM0 138 bytes free (-18), ROMX 161,097 free (-602), WRAM0 30
 free (unchanged), HRAM 0 free (unchanged), SRAM 7,646 free (unchanged). No
 change in this release consumes any RAM.

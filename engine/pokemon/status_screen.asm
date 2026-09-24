@@ -244,21 +244,31 @@ PrintStatsBox:
 	ld b, 8
 	ld c, 8
 	call TextBoxBorder
-	hlcoord 1, 9
-	ld bc, SCREEN_WIDTH + 5 ; one row down and 5 columns right
+	hlcoord 1, 10
 	jr .PrintStats
 .LevelUpStatsBox
 	hlcoord 9, 2
 	ld b, 8
 	ld c, 9
 	call TextBoxBorder
-	hlcoord 11, 3
-	ld bc, SCREEN_WIDTH + 4 ; one row down and 4 columns right
+	hlcoord 11, 4
 .PrintStats
+; There are five stats to show and the box is eight rows tall, so the old
+; layout of a label with its value on the row below no longer fits. Label and
+; value now share a row, which needs five rows instead of ten and leaves the
+; box the same size. Both boxes are nine columns wide inside, so a three letter
+; label and a three digit value sit either side of a gap.
+	ld bc, 5 ; five columns right, same row
 	push bc
 	push hl
 	ld de, .StatsText
+	ldh a, [hUILayoutFlags]
+	push af
+	set BIT_SINGLE_SPACED_LINES, a
+	ldh [hUILayoutFlags], a
 	call PlaceString
+	pop af
+	ldh [hUILayoutFlags], a
 	pop hl
 	pop bc
 	add hl, bc
@@ -269,22 +279,50 @@ PrintStatsBox:
 	call .PrintStat
 	ld de, wLoadedMonSpeed
 	call .PrintStat
-	ld de, wLoadedMonSpecial
-	jp PrintNumber
+	ld e, SPECIAL_ATTACK_FACTOR
+	call .PrintScaledSpecial
+	ld e, SPECIAL_DEFENSE_FACTOR
+	; fallthrough
+
+.PrintScaledSpecial:
+; One Special is stored and the two roles are worked out from it, so the screen
+; has to apply the same per-species factor the damage code applies. hl is the
+; screen position, e picks the factor, and bc is the PrintNumber format.
+	push bc
+	push hl
+	ld a, [wLoadedMonSpecies]
+	ld d, a
+	ld hl, wLoadedMonSpecial
+	ld a, [hli] ; stats are stored high byte first
+	ld l, [hl]
+	ld h, a
+	predef ScaleSpecialStatPredef
+	; PrintNumber reads its number out of memory, so the scaled value needs
+	; somewhere to live. wBuffer is the engine's scratch area and every user of
+	; it writes before it reads, so nothing here is holding anything in it.
+	ld a, h
+	ld [wBuffer], a
+	ld a, l
+	ld [wBuffer + 1], a
+	pop hl
+	pop bc
+	ld de, wBuffer
+	; fallthrough
 
 .PrintStat:
 	push hl
 	call PrintNumber
 	pop hl
-	ld de, SCREEN_WIDTH * 2
+	ld de, SCREEN_WIDTH
 	add hl, de
 	ret
 
 .StatsText:
-	db   "ATTACK"
-	next "DEFENSE"
-	next "SPEED"
-	next "SPECIAL@"
+	db   "ATK"
+	next "DEF"
+	next "SPE"
+	next "SPA"
+	next "SPD@"
 
 StatusScreen2:
 	ldh a, [hTileAnimations]
