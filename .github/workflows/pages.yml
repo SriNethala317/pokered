@@ -1,9 +1,8 @@
 # Builds the browser player (web/ + web/build/) and runs its tests.
 #
-# DEPLOY IS DISABLED. Publishing to GitHub Pages needs the repository owner's
-# go-ahead: enable Pages (Settings > Pages > Source: GitHub Actions), then
-# remove the `if: false` on the deploy job below. The build job only uploads
-# the site as a workflow artifact; nothing is published.
+# Publishes to GitHub Pages on every push to `integration` (approved by the
+# repository owner on 2026-09-24). Pages must be set to deploy from GitHub
+# Actions (Settings > Pages > Source: GitHub Actions).
 #
 # The site never contains a ROM: only the .bps patch, the patched ROM's sha1
 # and the addresses the page reads. Players bring their own Pokémon Red.
@@ -11,7 +10,7 @@ name: Web player
 
 on:
   push:
-    branches: [ integration, multiplayer ]
+    branches: [ integration ]
     paths: [ "web/**", "test/web/**", "tools/web_symbols.py", ".github/workflows/pages.yml" ]
   workflow_dispatch:
 
@@ -79,7 +78,7 @@ jobs:
           path: _site
 
   deploy:
-    if: false # disabled until the repository owner approves publishing
+    if: github.ref == 'refs/heads/integration'
     needs: build
     runs-on: ubuntu-latest
     permissions:
