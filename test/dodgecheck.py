@@ -232,7 +232,8 @@ def main():
     moved = {}
 
     def press_right(bb, f):
-        if bb._start is not None and not bb.phases and "x0" not in moved:
+        if bb._start is not None and not bb.phases and "x0" not in moved \
+                and bb.p.frame_count - bb._start > 4:  # once the phase has placed you
             moved["x0"] = bb.m("wDodgeX")
             bb.p.button_press("right")
         elif "x0" in moved and "x1" not in moved and bb.p.frame_count - bb._start > 20:

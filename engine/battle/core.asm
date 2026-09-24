@@ -278,6 +278,7 @@ EnemyRanText:
 	text_end
 
 MainInBattleLoop:
+	callfar FieldNewTurn ; a burning field singes before fainting is checked
 	call ReadPlayerMonCurHPAndStatus
 	ld hl, wBattleMonHP
 	ld a, [hli]
@@ -1903,6 +1904,7 @@ DrawEnemyHUDAndHPBar:
 	ld [wLoadedMonLevel], a
 	call PrintLevel
 .skipPrintLevel
+	callfar DrawFieldLabel
 	ld hl, wEnemyMonHP
 	ld a, [hli]
 	ldh [hMultiplicand + 1], a
@@ -3170,6 +3172,7 @@ PlayerCalcMoveDamage:
 	call AdjustDamageForMoveType
 	call RandomizeDamage
 	call MoveHitTest
+	callfar ApplyFieldToAttack
 	callfar ArmActionCommand ; only a fresh damage calculation opens a window
 	jr HandleIfPlayerMoveMissed
 .moveHitTest
@@ -3236,6 +3239,7 @@ MirrorMoveCheck:
 	call MetronomePickMove
 	jp CheckIfPlayerNeedsToChargeUp ; Go back to damage calculation for the move picked by Metronome
 .next
+	callfar FieldAfterMove
 	ld a, [wPlayerMoveEffect]
 	ld hl, ResidualEffects2
 	ld de, 1
@@ -5761,6 +5765,7 @@ EnemyCalcMoveDamage:
 	call AdjustDamageForMoveType
 	call RandomizeDamage
 	call MoveHitTest
+	callfar ApplyFieldToAttack
 	callfar ArmActionCommand ; only a fresh damage calculation opens a window
 	jr HandleIfEnemyMoveMissed
 
@@ -5835,6 +5840,7 @@ EnemyCheckIfMirrorMoveEffect:
 	call MetronomePickMove
 	jp CheckIfEnemyNeedsToChargeUp
 .notMetronomeEffect
+	callfar FieldAfterMove
 	ld a, [wEnemyMoveEffect]
 	ld hl, ResidualEffects2
 	ld de, $1

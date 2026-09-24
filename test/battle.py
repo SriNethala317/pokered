@@ -42,6 +42,9 @@ def main():
     at = {k: s[k][1] for k in WANTED if k in s}
 
     p = PyBoy(rom, window="null")
+    # executing $ff runs rst $38: the surest sign of a crash, wherever it lands
+    crashes = []
+    p.hook_register(0, 0x38, lambda _: crashes.append(p.register_file.SP), None)
     p.set_emulation_speed(0)
 
     # Hold SELECT across the title screen so the title hands off to DebugMenu
@@ -144,6 +147,28 @@ def main():
     # A crashed Game Boy sits in a halt loop with a frozen, usually blank screen.
     screen = p.screen.ndarray
     alive = screen[:, :, :3].std() >= 1.0
+    # The debug battle starts again as soon as one ends, and its fade-in is a
+    # black screen too; a live game comes out of it within seconds.
+    for _ in range(600):
+        if alive:
+            break
+        p.tick()
+        alive = p.screen.ndarray[:, :, :3].std() >= 1.0
+    if not alive and "-v" in sys.argv:
+        inv = sorted((a, b, n) for n, (b, a) in load_symbols(sym).items())
+        for _ in range(3):
+            for _ in range(20):
+                p.tick()
+            pc, bank = p.register_file.PC, p.memory[0xFFB8]
+            near = [n for a, b, n in inv if a <= pc and (b == bank or a < 0x4000)]
+            print(f"  PC {pc:#06x} bank {bank:#x} near {near[-1] if near else '?'}"
+                  f"  inBattle {p.memory[at['wIsInBattle']]}  party HP {word(p, at['wBattleMonHP'])}")
+        r = p.register_file
+        print(f"  LCDC {p.memory[0xFF40]:#x} BGP {p.memory[0xFF47]:#x} SP {r.SP:#x}")
+        for i in range(0, 24, 2):
+            a = p.memory[r.SP + i] | p.memory[r.SP + i + 1] << 8
+            near = [n for x, b, n in inv if x <= a and (x < 0x4000 or b in (0xF, 0x2D, 0x1E, 0x1C))]
+            print(f"    {a:#06x} {near[-1] if near and a < 0x8000 else ''}")
     p.stop(save=False)
 
     print()
@@ -151,6 +176,9 @@ def main():
     print(f"screen still live: {alive}")
     if not damage_seen:
         print("FAIL: no HP changed in 14 turns - the damage path is not running")
+        return 1
+    if crashes:
+        print(f"FAIL: the ROM crashed into rst $38 (SP {crashes[0]:#x})")
         return 1
     if not alive:
         print("FAIL: screen went blank - the ROM crashed during the battle")

@@ -48,7 +48,9 @@ EXTRA = (
     "wTileMapBackup", "wActionCommandCue", "wActionCommandStreak",
     "wIsInBattle", "wResonanceMeter", "wResonanceTurns", "wTrainerPain",
     "wResonanceFlags", "wPartyMon1Bond", "wEventFlags",
+    "wFieldEnv", "wFieldState", "wFieldTurns",
 )
+NUM_ENVS, NUM_FIELD_STATES, FIELD_TURNS = 8, 9, 5
 EVENT_RESONANCE_UNLOCKED = 0x6A
 RESONANCE_ACTIVE = 1 << 7
 TRAINER_MAX_HP = 24
@@ -150,6 +152,11 @@ class Fuzzer:
             self.fail(turn, f"Resonance active with {turns} turns")
         if not flags & RESONANCE_ACTIVE and turns:
             self.fail(turn, f"Resonance over but {turns} turns left")
+        env, field, left = m[at["wFieldEnv"]], m[at["wFieldState"]], m[at["wFieldTurns"]]
+        if env >= NUM_ENVS or field >= NUM_FIELD_STATES or left > FIELD_TURNS:
+            self.fail(turn, f"field out of range: env {env}, state {field}, turns {left}")
+        if field and not left:
+            self.fail(turn, f"Field State {field} with no turns left")
         speed = m[at["wOptions"]] & 0x0F
         if self.text_speed is not None and speed != self.text_speed:
             self.fail(turn, f"text speed bits changed to {speed:x}")
@@ -183,6 +190,11 @@ class Fuzzer:
             m[at["wPartyMon1Bond"]] = rng.choice((199, 200, 255))
         if rng.random() < 0.2:
             m[at["wResonanceMeter"]] = MAX_METER
+        # the battle stands somewhere random, and sometimes on a random field
+        m[at["wFieldEnv"]] = rng.randrange(NUM_ENVS)
+        if rng.random() < 0.3:
+            m[at["wFieldState"]] = rng.randrange(1, NUM_FIELD_STATES)
+            m[at["wFieldTurns"]] = rng.randint(1, FIELD_TURNS)
 
     def run(self, turns):
         rng = self.rng

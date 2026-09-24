@@ -192,6 +192,33 @@ Integration build sha1 `493aea78c62e631b76d3973f106f9ffcabf722aa`.
     - the unlock is at Brock;
     - the final battle theme plays while it lasts.
 
+### Battle environments and Field States
+
+- **Every battle happens somewhere.** It can be grass, sea (surfing), a cave,
+  a room, the Pokemon Tower, the snow of Seafoam, the sand of Cycling Road, or
+  the wires of the Power Plant. The place shows as a small lowercase label
+  right of the enemy's level.
+- **Moves change the field for a few turns.** The label turns to capitals:
+  - SOAK: Water. Electric is boosted and Fire halved.
+  - ICE!: Ice on SOAK, or Ice in the snow. Ice is boosted, and physical moves
+    may slip.
+  - FIRE: Fire on grass. Fire is boosted, everyone else singes 1/16 a turn,
+    and Water puts it out.
+  - DUG!: Dig. The next Ground or Rock move is boosted.
+  - RUBL: Earthquake or Rock Slide in a cave. It gives cover from the next
+    attack half the time.
+  - DUST: Sand-Attack or Gust on sand. Anyone but Rock and Ground types may
+    miss.
+  - ZAP!: Electric in the Power Plant. The next Electric move does x2, with
+    recoil.
+  - DARK: Smokescreen or Night Shade in the tower. Anything may miss, but
+    Ghost moves always hit.
+- **The next field-changing move replaces the state.** Boosts, miss chances
+  and durations grow with badges (`FieldRamp`). There is no text, so battles
+  are no longer, and link battles have no field.
+- **RAM.** It uses 4 bytes of RAM, which leaves 26 free. See
+  `docs/field-states-design.md`.
+
 ### Trainer Dodge Phase
 
 - **Gym leaders make you dodge in person.** The first damaging attack of each
@@ -362,6 +389,25 @@ New checks under `test/`, all run against each build:
   `pokered_debug.gbc`. Blue's targets are still in the Makefile but are no
   longer built, patched or tested, and every battle check runs on the Red
   debug build. `make bps` writes `pokered.bps` only.
+- `fieldcheck.py` - staged turns with action commands Off, reading the damage
+  as it enters the field code and as it is dealt:
+  - each state is made by its move in its place and not elsewhere;
+  - every boost, halving and the ZAP! doubling are exact;
+  - the singe is 1/16;
+  - DUG!, RUBL and ZAP! are used up, and not remade by the move that used them;
+  - Ghost moves always hit in the dark;
+  - a state lasts 5 turns, adds no text, and never appears in a link battle.
+  It found a crash on the first draft: see `bankcheck.py`.
+- `bankcheck.py` - reads every `.asm` file against the linker's symbols and
+  fails on any plain `call`/`jp`/`jr` from one switchable ROM bank into
+  another. Such a call runs whatever sits at that address in the current bank.
+  The first draft of the field code called `BattleRandom` (bank $0F) from bank
+  $2D this way, and crashed on a Rubble block.
+- `battle.py` now also watches for `rst $38` directly. It lets a blank screen
+  come back for up to 10 seconds before calling it a crash, because the debug
+  battle's fade-in into the next battle is black too.
+- `fuzzbattle.py` now also stands the battle in a random place and on a random
+  Field State, and checks the field bytes stay in range.
 - `dodgecheck.py` - fights Brock (a real trainer battle) and forces each
   outcome through the phase's own routines:
   - untouched gives DODGED!, half damage and a meter of 3;

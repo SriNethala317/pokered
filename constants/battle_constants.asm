@@ -159,3 +159,28 @@ DEF RESONANCE_ACTIVE       EQU 7
 ; the Resonance bar in the player's HUD: a cap and 3 segments of 8 pixels
 DEF RESONANCE_BAR_TILES  EQU 3
 DEF TRAINER_MAX_HP       EQU RESONANCE_BAR_TILES * 8
+
+; wFieldEnv: where the battle is, see engine/battle/field.asm
+	const_def
+	const ENV_INDOOR ; 0
+	const ENV_GRASS  ; 1
+	const ENV_WATER  ; 2 surfing
+	const ENV_CAVE   ; 3
+	const ENV_TOWER  ; 4 the Pokemon Tower, in the dark
+	const ENV_SNOW   ; 5 the Seafoam Islands
+	const ENV_SAND   ; 6 Cycling Road
+	const ENV_PLANT  ; 7 the Power Plant
+DEF NUM_ENVS EQU const_value
+
+; wFieldState
+	const_def
+	const FIELD_NONE       ; 0
+	const FIELD_SOAKED     ; 1
+	const FIELD_FROZEN     ; 2
+	const FIELD_BURNING    ; 3
+	const FIELD_TUNNELS    ; 4
+	const FIELD_RUBBLE     ; 5
+	const FIELD_SANDSTORM  ; 6
+	const FIELD_OVERCHARGE ; 7
+	const FIELD_BLACKOUT   ; 8
+DEF NUM_FIELD_STATES EQU const_value

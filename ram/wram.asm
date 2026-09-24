@@ -549,6 +549,13 @@ wDodgeY:: db
 wDodgeHits:: db
 ; one bit per enemy party slot: its Pokemon has already made you dodge
 wDodgeDone:: db
+; Battle environments and Field States, see engine/battle/field.asm
+wFieldEnv:: db
+wFieldState:: db
+; turns the Field State has left
+wFieldTurns:: db
+; which side a one-shot state belongs to (Rubble: the side it shelters)
+wFieldOwner:: db
 wMiscBattleDataEnd::
 ENDU
 
