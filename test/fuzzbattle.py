@@ -156,8 +156,8 @@ class Fuzzer:
         env, field, left = m[at["wFieldEnv"]], m[at["wFieldState"]], m[at["wFieldTurns"]]
         if env >= NUM_ENVS or field >= NUM_FIELD_STATES or left > FIELD_TURNS:
             self.fail(turn, f"field out of range: env {env}, state {field}, turns {left}")
-        if m[at["wImprovise"]] & 0x7F > 3:
-            self.fail(turn, f"Improvise wait {m[at['wImprovise']] & 0x7F} above 3")
+        if m[at["wImprovise"]] & 0b11100:  # only the wait (bits 0-1) and flags 5-7 are used
+            self.fail(turn, f"Improvise byte {m[at['wImprovise']]:#x} has unused bits set")
         if field and not left:
             self.fail(turn, f"Field State {field} with no turns left")
         speed = m[at["wOptions"]] & 0x0F
