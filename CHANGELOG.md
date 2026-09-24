@@ -239,6 +239,22 @@ Integration build sha1 `493aea78c62e631b76d3973f106f9ffcabf722aa`.
   removes the "permanently lost a TM" failure mode at the cost of the TM
   economy; the trade-off is deliberate.
 
+### Sharing the hack
+
+- **`make bps` writes `pokered.bps` and `pokeblue.bps`,** patches against the
+  retail games that any BPS patcher can apply (Floating IPS, Rom Patcher JS, or
+  the one built into most emulators), so the hack can be shared without handing
+  out a ROM. Each is about 37 KB.
+  - The base is the unmodified game. A `baserom_red.gbc` or `baserom_blue.gbc`
+    is used if present. Otherwise `tools/make_bps.py` builds the vanilla
+    disassembly (commit `a1a22aaf`, the tip of `master`) in a temporary git
+    worktree, checks it against the retail sha1, and keeps it as the baserom
+    for next time.
+  - Every patch is decoded again and applied to its base before it is kept,
+    and the result has to match the built ROM byte for byte.
+  - `python3 tools/make_bps.py --apply base.gbc patch.bps out.gbc` applies a
+    patch, and refuses a base that is not the game the patch was made from.
+
 ### Testing
 
 New checks under `test/`, all run against each build:

@@ -60,6 +60,7 @@ RGBGFXFLAGS  ?= -Weverything
 	clean \
 	tidy \
 	compare \
+	bps \
 	tools
 
 all: $(roms)
@@ -81,6 +82,7 @@ tidy:
 	      $(roms:.gbc=.sym) \
 	      $(roms:.gbc=.map) \
 	      $(patches) \
+	      pokered.bps pokeblue.bps \
 	      $(patches:.patch=_vc.gbc) \
 	      $(patches:.patch=_vc.sym) \
 	      $(patches:.patch=_vc.map) \
@@ -95,6 +97,11 @@ tidy:
 
 compare: $(roms) $(patches)
 	@$(SHA1) -c roms.sha1
+
+# Patches against the retail games, for sharing the hack without the ROM.
+# See tools/make_bps.py for where the vanilla base comes from.
+bps: pokered.gbc pokeblue.gbc
+	python3 tools/make_bps.py pokered pokeblue
 
 tools:
 	$(MAKE) -C tools/
