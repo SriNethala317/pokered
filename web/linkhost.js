@@ -25,7 +25,8 @@ const INVITE_MS = 30000;
 const USING_EXTERNAL_CLOCK = 1;
 
 export class LinkHost {
-  constructor({ emu, net, manifest, ui }) {
+  constructor({ emu, net, manifest, ui, now = () => performance.now(), timers = true }) {
+    this.now = now;
     this.emu = emu;
     this.net = net;
     this.ram = manifest.ram;
@@ -41,7 +42,7 @@ export class LinkHost {
     net.on("closed", () => this.session && this.end("You left the room.", false));
     emu.on("frame", () => this.pump());
     emu.on("stall", () => this.pump());
-    this.timer = setInterval(() => this.pump(), 250); // heartbeats and timeouts while paused
+    if (timers) this.timer = setInterval(() => this.pump(), 250); // heartbeats and timeouts while paused
   }
 
   dispose() {
@@ -57,7 +58,7 @@ export class LinkHost {
   invite(peerId, mode) {
     if (this.session || this.pending) return false;
     const sid = 1 + Math.floor(Math.random() * 0x7ffffffe);
-    this.pending = { to: peerId, sid, mode, at: performance.now() };
+    this.pending = { to: peerId, sid, mode, at: this.now() };
     this.net.sendLinkCtl({ t: "linkInvite", to: peerId, sid, mode });
     this.ui.state(`Waiting for an answer…`);
     return true;
@@ -89,7 +90,7 @@ export class LinkHost {
   }
 
   start(peer, sid, mode, role) {
-    const now = performance.now();
+    const now = this.now();
     this.session = { peer, sid, mode, role, lastRx: now, lastTx: now };
     // the guest only drives the clock once it is connected as external
     if (role === "guest") this.emu.linkGate(this.ram.hSerialConnectionStatus, USING_EXTERNAL_CLOCK);
@@ -104,7 +105,7 @@ export class LinkHost {
   onLink(from, pkt) {
     const s = this.session;
     if (!s || from !== s.peer || pkt.sid !== s.sid) return; // not our session: ignore
-    s.lastRx = performance.now();
+    s.lastRx = this.now();
     for (const v of pkt.records) {
       if (!this.emu.linkPush(v >> 8, v & 0xff)) return this.end("Link overflow.", true);
     }
@@ -113,7 +114,7 @@ export class LinkHost {
 
   pump() {
     if (this.disposed) return;
-    const now = performance.now();
+    const now = this.now();
     if (this.pending && now - this.pending.at > INVITE_MS) {
       this.pending = null;
       this.ui.state("No answer.");

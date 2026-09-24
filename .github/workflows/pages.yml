@@ -1,0 +1,93 @@
+# Builds the browser player (web/ + web/build/) and runs its tests.
+#
+# DEPLOY IS DISABLED. Publishing to GitHub Pages needs the repository owner's
+# go-ahead: enable Pages (Settings > Pages > Source: GitHub Actions), then
+# remove the `if: false` on the deploy job below. The build job only uploads
+# the site as a workflow artifact; nothing is published.
+#
+# The site never contains a ROM: only the .bps patch, the patched ROM's sha1
+# and the addresses the page reads. Players bring their own Pokémon Red.
+name: Web player
+
+on:
+  push:
+    branches: [ integration, multiplayer ]
+    paths: [ "web/**", "test/web/**", "tools/web_symbols.py", ".github/workflows/pages.yml" ]
+  workflow_dispatch:
+
+env:
+  rgbds_version: v1.0.3
+  emsdk_version: 6.0.10 # the version the tests were run with
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # make_bps.py builds the vanilla base from an old commit
+
+      - name: Checkout rgbds
+        uses: actions/checkout@v4
+        with:
+          path: rgbds
+          ref: ${{ env.rgbds_version }}
+          repository: gbdev/rgbds
+
+      - name: Install rgbds
+        working-directory: rgbds
+        run: |
+          sudo apt-get update
+          sudo apt-get install -yq bison libpng-dev pkg-config
+          sudo make -j$(nproc) install
+
+      - name: Remove rgbds
+        run: rm -rf rgbds
+
+      - name: Install emsdk
+        run: |
+          git clone --depth 1 https://github.com/emscripten-core/emsdk "$HOME/emsdk"
+          "$HOME/emsdk/emsdk" install ${{ env.emsdk_version }}
+          "$HOME/emsdk/emsdk" activate ${{ env.emsdk_version }}
+
+      - name: Fetch the SameBoy core
+        run: web/fetch_core.sh
+
+      - name: Build
+        run: |
+          make -j$(nproc) pokered.gbc
+          make web EMCC="$HOME/emsdk/upstream/emscripten/emcc"
+
+      - name: Test
+        run: |
+          node test/web/core_smoke.mjs
+          node test/web/net_test.mjs
+          node test/web/presence_test.mjs
+          node test/web/link_e2e.mjs
+
+      - name: Assemble site
+        run: |
+          mkdir -p _site/build
+          cp web/index.html web/style.css web/*.js _site/
+          cp web/build/core.js web/build/core.wasm web/build/manifest.json web/build/pokered.bps _site/build/
+          cp web/build/SameBoy-LICENSE.txt _site/build/
+
+      - name: Upload site
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+  deploy:
+    if: false # disabled until the repository owner approves publishing
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

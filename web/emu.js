@@ -20,8 +20,9 @@ export class Emulator {
     this.M = M;
     this.s = M._shim_create();
     this.canvas = canvas;
-    this.ctx = canvas.getContext("2d", { alpha: false });
-    this.image = this.ctx.createImageData(160, 144);
+    // canvas may be null (tests): then nothing is drawn
+    this.ctx = canvas ? canvas.getContext("2d", { alpha: false }) : null;
+    this.image = this.ctx ? this.ctx.createImageData(160, 144) : null;
     this.keys = 0;
     this.running = false;
     this.acc = 0;
@@ -148,6 +149,7 @@ export class Emulator {
 
   // ---- frame loop ----
   draw() {
+    if (!this.ctx) return;
     const fb = this.M._shim_framebuffer(this.s);
     this.image.data.set(this.M.HEAPU8.subarray(fb, fb + 160 * 144 * 4));
     this.ctx.putImageData(this.image, 0, 0);

@@ -110,6 +110,7 @@ web: pokered.gbc
 	python3 tools/make_bps.py pokered
 	python3 tools/web_symbols.py pokered
 	cp pokered.bps web/build/pokered.bps
+	cp web/vendor/SameBoy/LICENSE web/build/SameBoy-LICENSE.txt
 	$(MAKE) -C web/core wasm
 
 tools:
