@@ -203,6 +203,10 @@ def run_linked(a, b, wire, until, budget, must=True):
             return stall
     if not must:
         return stall
+    if os.environ.get("NETLINK_SHOTS"):
+        from PIL import Image
+        for p in (a, b):
+            Image.frombytes("RGBA", (160, 144), p.c.framebuffer()).save(f"/tmp/netlink_{p.name}.png")
     raise AssertionError(
         f"timed out: {a.name} map={a.mem('wCurMap')} status={a.c.read(0xFFAA):#x}, "
         f"{b.name} map={b.mem('wCurMap')} status={b.c.read(0xFFAA):#x}"
@@ -301,17 +305,27 @@ def main():
     # Stage 5: select mon 1, choose TRADE, confirm. Keep pressing A on both.
     def trade(p):
         yield from p.wait(120)
+        yield from p.tap("a", rel=40)  # pick the first mon
+        yield from p.tap("right", rel=20)  # STATS -> TRADE
         while True:
             yield from p.tap("a", rel=40)
 
     host.driver, guest.driver = trade(host), trade(guest)
 
+    shots = [0]
+
     def traded():
+        if os.environ.get("NETLINK_SHOTS") and wire.tick % 300 == 0:
+            from PIL import Image
+            for p in (host, guest):
+                Image.frombytes("RGBA", (160, 144), p.c.framebuffer()).save(f"/tmp/nl_{p.name}_{shots[0]:03d}.png")
+            print(wire.tick, hex(host.c.L.shim_reg(host.c.s, 5)), hex(guest.c.L.shim_reg(guest.c.s, 5)), host.c.stalled(), wire.messages)
+            shots[0] += 1
         return (
             host.mem("wPartySpecies") == guest.species and guest.mem("wPartySpecies") == host.species
         )
 
-    stall = run_linked(host, guest, wire, traded, 120000)
+    stall = run_linked(host, guest, wire, traded, 30000)
     print(f"stage 5: trade complete after {wire.tick} ticks, {wire.messages} messages, stalls {stall}")
     print(f"total {time.time() - t0:.1f}s")
     return 0
