@@ -10,7 +10,8 @@ rather than calling the routine:
     has fainted is passed over for the next Pokemon that can fight;
   - winning: a Pokemon that takes part gains BOND_WIN for the enemy it beat,
     once even when Exp. All shares the experience, and stops at MAX_BOND;
-  - fainting: the Pokemon loses 10, and stops at 0.
+  - fainting: the Pokemon loses 10, and stops at 0;
+  - losing still counts: after a lost battle every Pokemon in the party gains 3.
 
 Usage:
     python test/bondcheck.py [pokered_debug.gbc pokered_debug.sym]
@@ -21,7 +22,7 @@ from debugbattle import NotReached, boot_to_debug_menu, enter, tap, word, write_
 from rominspect import load_symbols
 from statuscheck import read_screen
 
-BOND_STEPS, BOND_WALK, BOND_WIN, BOND_FAINT = 16, 1, 2, -10
+BOND_STEPS, BOND_WALK, BOND_WIN, BOND_FAINT, BOND_LOSS = 16, 1, 2, -10, 3
 PARTYMON_STRUCT_LENGTH = 44
 SWIFT, POUND = 129, 1
 BATTLE_FRAMES = 6000
@@ -95,7 +96,19 @@ def faint(rom, sym, symbols, start):
             break
         if frame % 30 == 0:
             tap(p, "a", hold=4, release=4)
-    after = bond(p, symbols, 0)
+    # Let the lost battle play out to the blackout, which adds its own Bond.
+    # The debug battle then starts over and rebuilds the party, so read the
+    # Bond the moment the blackout handler has added it.
+    seen = []
+    p.hook_register(*symbols["HandlePlayerBlackOut.notRival1Battle"],
+                    lambda _: seen.append(bond(p, symbols, 0)), None)
+    for frame in range(900 if fainted else 0):
+        p.tick()
+        if seen:
+            break
+        if frame % 30 == 0:
+            tap(p, "a", hold=4, release=4)
+    after = seen[0] if seen else bond(p, symbols, 0)
     p.stop(save=False)
     return fainted, after
 
@@ -219,10 +232,13 @@ def main():
         check(over and after == 255, f"a win stops at 255: 254 -> {after}")
 
         print("fainting")
+        # The debug battle has one Pokemon, so its fainting is also a lost
+        # battle, and losing still counts: -10, then +3 for having fought.
         fainted, after = faint(rom, sym, symbols, 50)
-        check(fainted and after == 50 + BOND_FAINT, f"fainting costs {-BOND_FAINT}: 50 -> {after}")
+        want = 50 + BOND_FAINT + BOND_LOSS
+        check(fainted and after == want, f"fainting costs {-BOND_FAINT}, the loss gives {BOND_LOSS}: 50 -> {after} (want {want})")
         fainted, after = faint(rom, sym, symbols, 5)
-        check(fainted and after == 0, f"fainting stops at 0: 5 -> {after}")
+        check(fainted and after == BOND_LOSS, f"fainting stops at 0 before the loss's +{BOND_LOSS}: 5 -> {after}")
 
         print("walking")
         walk_checks(rom, sym, symbols)

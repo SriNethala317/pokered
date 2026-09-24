@@ -112,3 +112,4 @@ DEF BOND_WALK     EQU 1
 DEF BOND_WIN      EQU 2   ; for each enemy Pokemon beaten while taking part
 DEF BOND_LANDED   EQU 1   ; for a PERFECT or COUNTER
 DEF BOND_FAINT    EQU -10
+DEF BOND_LOSS     EQU 3   ; for every Pokemon in the party, after a lost battle

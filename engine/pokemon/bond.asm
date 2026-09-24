@@ -54,3 +54,19 @@ StepBond::
 .gotLead
 	ld d, BOND_WALK
 	jr ChangeBond
+
+; Losing still counts: a blackout means the whole team went down fighting, and
+; every Pokemon in it comes out closer to you (BOND_LOSS), so a loss is never
+; wasted. (The fainted ones have already lost their "took part" flags.)
+LosingStillCounts::
+	ld e, 0
+.loop
+	ld a, [wPartyCount]
+	cp e
+	ret z
+	push de
+	ld d, BOND_LOSS
+	call ChangeBond
+	pop de
+	inc e
+	jr .loop

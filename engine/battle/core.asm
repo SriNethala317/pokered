@@ -1141,6 +1141,7 @@ HandlePlayerBlackOut:
 	ld a, [wLinkState]
 	cp LINK_STATE_BATTLING
 	jr z, .notRival1Battle
+	callfar LosingStillCounts ; a loss brings the team closer all the same
 	ld a, [wCurOpponent]
 	cp OPP_RIVAL1
 	jr nz, .notRival1Battle

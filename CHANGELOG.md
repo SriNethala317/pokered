@@ -143,6 +143,8 @@ Integration build sha1 `493aea78c62e631b76d3973f106f9ffcabf722aa`.
     still fight), and by 2 for every Pokemon that takes part in beating an enemy
     Pokemon. Exp. All shares experience but not Bond.
   - It falls by 10 when the Pokemon faints.
+  - **Losing still counts:** after a lost battle, every Pokemon in the party
+    gains 3, so a loss is never wasted.
   - Saves from before this change keep the old catch rate in that byte, so
     their Pokemon start with a Bond equal to their species' catch rate.
   - A PERFECT or a COUNTER adds 1 to the Pokemon that landed it.
@@ -557,7 +559,8 @@ New checks under `test/`, all run against each build:
     player's next move is CANNOT_MOVE.
   `fuzzbattle.py` now also unlocks it, gives Bond and a full meter at random,
   mashes SELECT, and checks the meter, pain and turns stay in range.
-- `bondcheck.py` - plays the debug build to check Bond: every Pokemon the debug
+- `bondcheck.py` - plays the debug build to check Bond (with a lost battle's
+  +3 read the moment the blackout handler adds it): every Pokemon the debug
   new game adds starts at 0, the 16th step gives the lead 1 and other steps
   nothing, a fainted lead is passed over, a win gives 2 (once, even with Exp.
   All in the bag), fainting costs 10, and Bond stops at 0 and 255.
