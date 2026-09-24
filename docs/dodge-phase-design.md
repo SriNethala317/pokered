@@ -1,6 +1,7 @@
-# Trainer Dodge Phase (build step 5, prototype)
+# Trainer Dodge Phase (build step 5)
 
-Combat layer C of the brief, prototyped on Brock. Written 2026-09-24 during an
+Combat layer C of the brief, prototyped on Brock and then rolled out to all
+eight gym leaders. Written 2026-09-24 during an
 unattended session; **provisional** marks calls made without the user.
 
 - **When:** the first damaging attack of each of a boss's Pokemon, in trainer
@@ -35,6 +36,23 @@ unattended session; **provisional** marks calls made without the user.
   Assist always uses the first row.
 - **Fairness:** a bot that steps toward the nearest clear column took 0 hits
   in 6 real phases with random rocks at 0 badges.
-- **Next:** Misty (wave sweeps), Surge (lightning grid), Sabrina (mirrored
-  movement) and the rest. Each is a new spawn/fall pattern selected by trainer
-  class in `DodgeBosses`.
+- **Every leader has a pattern** (`DodgeBosses`, trainer class to pattern):
+
+  | Leader | Pattern | Hazard |
+  |---|---|---|
+  | Brock | fall | rocks drop a row a beat after a ▼ warning |
+  | Misty | sweep | a wave with a 2-row gap moves right a column a beat |
+  | Lt. Surge | column | lightning: `.` then `×` warnings, then a strike |
+  | Erika | sweep | lashing vines |
+  | Koga | row | poison gas across a row |
+  | Sabrina | fall, mirrored | left and right are swapped |
+  | Blaine | column | fire pillars |
+  | Giovanni | row | earthquakes |
+
+  Strikes get two beats of warning and twice the beat length. Waves come a
+  third as often as rocks. The player is sprite 0 showing the font's ♂, so it
+  never hides a warning, and the hazards live in the tilemap.
+- **Fairness:** a bot that only looks 3 tiles around it took 0 hits in one real
+  phase against each leader, except Erika (3, because a random gap can be far
+  away). Brock alone: 0 hits in 6 phases.
+- **Provisional:** the ASCII-style glyphs; real sprites later.

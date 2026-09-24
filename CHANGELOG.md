@@ -192,10 +192,10 @@ Integration build sha1 `493aea78c62e631b76d3973f106f9ffcabf722aa`.
     - the unlock is at Brock;
     - the final battle theme plays while it lasts.
 
-### Trainer Dodge Phase (prototype, Brock)
+### Trainer Dodge Phase
 
-- **Brock makes you dodge in person.** The first damaging attack of each of
-  his Pokemon opens a small DODGE! arena over the battle screen for two and a
+- **Gym leaders make you dodge in person.** The first damaging attack of each
+  of a leader's Pokemon opens a small DODGE! arena over the battle screen for two and a
   half seconds.
   - You are the ♂, moved a tile at a time with the D-pad. A ▼ warns where a
     rock will fall, and then it falls row by row.
@@ -210,7 +210,14 @@ Integration build sha1 `493aea78c62e631b76d3973f106f9ffcabf722aa`.
     exactly as it was.
   - It needs no new RAM beyond 4 bytes of padding, because the rocks live in
     the tilemap itself.
-  - See `docs/dodge-phase-design.md`. The other bosses' patterns are next.
+  - Every leader has a pattern of their own:
+    - Brock: falling rocks.
+    - Misty and Erika: waves and vines that sweep across with a gap.
+    - Lt. Surge and Blaine: lightning and fire columns, warned twice before
+      they strike.
+    - Koga and Giovanni: poison and quake rows.
+    - Sabrina: rocks with your left and right swapped.
+  - See `docs/dodge-phase-design.md`.
 
 ### Battle mechanics
 
@@ -364,6 +371,9 @@ New checks under `test/`, all run against each build:
   - the screen is restored byte for byte;
   - it never opens against a wild Pokemon, a Youngster or with Off;
   - it takes at most 160 frames.
+  - For every leader, a dodging bot plays a real phase: the arena must open,
+    show that leader's hazard, and restore the screen. Sabrina's RIGHT must
+    move left.
 - `resonancecheck.py` - staged turns in the debug battle, with three badges.
   - Nothing fills or shows before the unlock.
   - The meter fills by 2 and 1, and Bond by 1 on PERFECT and COUNTER only.
