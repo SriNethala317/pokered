@@ -213,6 +213,28 @@ Integration build sha1 `493aea78c62e631b76d3973f106f9ffcabf722aa`.
   - A session that goes quiet for 10 seconds ends. A game that was mid-link
     restarts from its last save.
   - A dropped trade leaves both saves as they were.
+- **Trades no longer wait on the network.** The big exchanges (both parties,
+  the shared random numbers, the patch lists) and the "Waiting...!" syncs
+  each travel as one message, the way the 3DS Virtual Console did it, instead
+  of one round trip per byte. Everything else still goes byte by byte.
+  - From using the trade table to both saves: about 55 seconds at 50 ms each
+    way, down from 2 minutes 10, and about 56 seconds at 170 ms each way, down
+    from 5 minutes. Almost all of what remains is the game's own menus and
+    trade animation (54 seconds with no delay at all).
+  - Tested to give the same result as byte by byte: both games parse the same
+    name, random numbers and parties at the trade menu, after the trade and in
+    the save.
+  - At long delays the byte-by-byte trade could hang in the sync after a trade.
+    It doesn't any more.
+- **Link battles are tested.** Two games battle in the Colosseum until one
+  side faints, and both must agree on both Pokémon's HP at every turn and on
+  the result. They do at 0, 50 and 170 ms each way. A three-turn battle takes
+  about 84 seconds at 170 ms each way, down from 5 minutes. Action Commands,
+  Field States, Resonance and Dodge stay off in link battles, and nothing
+  desyncs.
+  - Talk to the receptionist one player at a time. If you both talk at the
+    same moment over a slow connection, the receptionist may say the area is
+    reserved. Just talk to them again.
 - **The ROM no longer trusts what the other Game Boy sends.** Gen 1 link
   trades are a known way to run arbitrary code, through glitch species and
   names with no terminator. Before the game uses a received party it now
@@ -230,9 +252,8 @@ Integration build sha1 `493aea78c62e631b76d3973f106f9ffcabf722aa`.
   - GitHub Pages publishing (the deploy job is switched off until you approve
     it);
   - testing on real phones;
-  - link battles, where only trades are tested;
-  - faster trades. Every byte costs a round trip, so a trade takes about 2
-    minutes at 100 ms.
+  - faster battle turns. Each turn's choice still syncs byte by byte, which
+    costs about 5 seconds a turn at 170 ms each way.
 
 ### Battle environments and Field States
 
