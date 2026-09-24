@@ -20,6 +20,7 @@ POUND, GROWL = 0x01, 0x2D
 LEAD_IN, WINDOW, CLOSED, BADGE = 1, 2, 3, 4
 NONE, EARLY, GOOD, PERFECT = 0, 1, 2, 3
 TIMED = 1 << 1
+DODGED = 1 << 2
 B_FOE_GREAT, B_FOE_BRACED, B_COUNTER = 7, 8, 5
 OPP_ID_OFFSET = 200
 RIVAL1, BROCK = 0x19, 0x22
@@ -266,6 +267,8 @@ def test_trainer(rom, sym, shot):
             if side not in b.before or side not in b.dealt:
                 continue
             before, dealt = b.before[side], b.dealt[side]
+            if b.foe[side] & DODGED:
+                continue  # a Dodge Phase stood in for the window (dodgecheck.py)
             is_timed = b.foe[side] & TIMED
             timed[side] += bool(is_timed)
             if b.result[side] != GOOD:
