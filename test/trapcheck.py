@@ -13,7 +13,7 @@ flagged to recharge. In vanilla the recharge was set by a move effect that runs
 only after a check for a fainted target, so a knockout skipped it entirely.
 
 Usage:
-    python test/trapcheck.py pokeblue_debug.gbc pokeblue_debug.sym
+    python test/trapcheck.py pokered_debug.gbc pokered_debug.sym
 """
 import sys
 
@@ -136,8 +136,8 @@ def hyper_beam_recharges_after_a_knockout(p, at):
 
 
 def main():
-    rom_path = sys.argv[1] if len(sys.argv) > 1 else "pokeblue_debug.gbc"
-    sym_path = sys.argv[2] if len(sys.argv) > 2 else "pokeblue_debug.sym"
+    rom_path = sys.argv[1] if len(sys.argv) > 1 else "pokered_debug.gbc"
+    sym_path = sys.argv[2] if len(sys.argv) > 2 else "pokered_debug.sym"
 
     try:
         p, at = enter(rom_path, sym_path)

@@ -33,3 +33,6 @@
 
 # graphify output
 graphify-out/
+
+# test output
+test/out/

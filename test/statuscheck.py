@@ -19,7 +19,7 @@ look at, and a decoded copy of the box read straight out of `wTileMap`, so the
 labels and the numbers can be asserted instead of eyeballed.
 
 Usage:
-    python test/statuscheck.py pokeblue_debug.gbc pokeblue_debug.sym [shot.png]
+    python test/statuscheck.py pokered_debug.gbc pokered_debug.sym [shot.png]
 
 The other screenshots are written next to the first, with `_levelup` and
 `_candy` added.
@@ -347,8 +347,8 @@ def check_rare_candy_box(rom_path, sym_path, shot):
 
 
 def main():
-    rom_path = sys.argv[1] if len(sys.argv) > 1 else "pokeblue_debug.gbc"
-    sym_path = sys.argv[2] if len(sys.argv) > 2 else "pokeblue_debug.sym"
+    rom_path = sys.argv[1] if len(sys.argv) > 1 else "pokered_debug.gbc"
+    sym_path = sys.argv[2] if len(sys.argv) > 2 else "pokered_debug.sym"
     shot = sys.argv[3] if len(sys.argv) > 3 else "status.png"
     stem, dot, ext = shot.rpartition(".")
     level_up_shot = f"{stem}_levelup.{ext}" if dot else f"{shot}_levelup"

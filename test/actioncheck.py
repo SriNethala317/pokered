@@ -27,7 +27,7 @@ FinishActionCommand being entered and the move's impact animation starting are
 exactly the frames the window added to that attack. It may never exceed 20.
 
 Usage:
-    python test/actioncheck.py pokeblue_debug.gbc pokeblue_debug.sym [shot-prefix]
+    python test/actioncheck.py pokered_debug.gbc pokered_debug.sym [shot-prefix]
 """
 import sys
 
@@ -342,8 +342,8 @@ def doubled(d):
 
 
 def main():
-    rom_path = sys.argv[1] if len(sys.argv) > 1 else "pokeblue_debug.gbc"
-    sym_path = sys.argv[2] if len(sys.argv) > 2 else "pokeblue_debug.sym"
+    rom_path = sys.argv[1] if len(sys.argv) > 1 else "pokered_debug.gbc"
+    sym_path = sys.argv[2] if len(sys.argv) > 2 else "pokered_debug.sym"
     prefix = sys.argv[3] if len(sys.argv) > 3 else None
 
     try:

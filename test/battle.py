@@ -8,7 +8,7 @@ level 20 Rhydon mirror match. The battle code is identical between the release
 and debug builds -- only the entry point differs.
 
 Usage:
-    python test/battle.py pokeblue_debug.gbc pokeblue_debug.sym [shot-prefix]
+    python test/battle.py pokered_debug.gbc pokered_debug.sym [shot-prefix]
 """
 import sys
 
@@ -34,8 +34,8 @@ def word(p, a):
 
 
 def main():
-    rom = sys.argv[1] if len(sys.argv) > 1 else "pokeblue_debug.gbc"
-    sym = sys.argv[2] if len(sys.argv) > 2 else "pokeblue_debug.sym"
+    rom = sys.argv[1] if len(sys.argv) > 1 else "pokered_debug.gbc"
+    sym = sys.argv[2] if len(sys.argv) > 2 else "pokered_debug.sym"
     prefix = sys.argv[3] if len(sys.argv) > 3 else None
 
     s = load_symbols(sym)

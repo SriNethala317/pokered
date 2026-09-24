@@ -241,7 +241,7 @@ Integration build sha1 `493aea78c62e631b76d3973f106f9ffcabf722aa`.
 
 ### Sharing the hack
 
-- **`make bps` writes `pokered.bps` and `pokeblue.bps`,** patches against the
+- **`make bps` writes `pokered.bps`,** patches against the
   retail games that any BPS patcher can apply (Floating IPS, Rom Patcher JS, or
   the one built into most emulators), so the hack can be shared without handing
   out a ROM. Each is about 37 KB.
@@ -258,6 +258,19 @@ Integration build sha1 `493aea78c62e631b76d3973f106f9ffcabf722aa`.
 ### Testing
 
 New checks under `test/`, all run against each build:
+
+- **Only Red is built.** `make` now builds `pokered.gbc` and a new
+  `pokered_debug.gbc`. Blue's targets are still in the Makefile but are no
+  longer built, patched or tested, and every battle check runs on the Red
+  debug build. `make bps` writes `pokered.bps` only.
+- `fuzzbattle.py` - plays hundreds of turns of the debug battle with a random
+  move on each side (every move that keeps a wild battle going), random badges,
+  option, animation setting, HP and streak, and buttons mashed on almost every
+  frame. With `--trainer`, each attack is armed as if against a trainer, so
+  trainer timing and feints are fuzzed too. At every battle menu it checks for
+  a crash, a window left open, a cue or badge stuck on screen or in the saved
+  screen, HP above max and changed text speed bits, and it fails if the battle
+  menu stops coming back. About 6,000 turns over 25 seeds pass.
 
 - `smoke.py` - the ROM boots and draws a screen.
 - `romspace.py` - ROM and RAM headroom per region, with a delta against

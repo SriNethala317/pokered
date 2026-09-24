@@ -19,7 +19,7 @@ species with a high special defence factor must be lower than against one with
 a low factor, and the same for the attacking side.
 
 Usage:
-    python test/splitcheck.py pokeblue_debug.gbc pokeblue_debug.sym
+    python test/splitcheck.py pokered_debug.gbc pokered_debug.sym
 """
 import statistics
 import sys
@@ -170,8 +170,8 @@ def report(name, samples):
 
 
 def main():
-    rom_path = sys.argv[1] if len(sys.argv) > 1 else "pokeblue_debug.gbc"
-    sym_path = sys.argv[2] if len(sys.argv) > 2 else "pokeblue_debug.sym"
+    rom_path = sys.argv[1] if len(sys.argv) > 1 else "pokered_debug.gbc"
+    sym_path = sys.argv[2] if len(sys.argv) > 2 else "pokered_debug.sym"
 
     try:
         p, at = enter(rom_path, sym_path)

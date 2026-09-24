@@ -14,7 +14,7 @@ Every patch is checked before it is kept: it is decoded again, applied to the
 base, and the result must match the built ROM byte for byte.
 
 Usage:
-    python3 tools/make_bps.py pokered pokeblue
+    python3 tools/make_bps.py pokered
     python3 tools/make_bps.py --apply base.gbc patch.bps out.gbc
 """
 import hashlib
