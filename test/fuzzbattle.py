@@ -50,7 +50,8 @@ EXTRA = (
     "wResonanceFlags", "wPartyMon1Bond", "wEventFlags",
     "wFieldEnv", "wFieldState", "wFieldTurns", "wImprovise",
 )
-NUM_ENVS, NUM_FIELD_STATES, FIELD_TURNS = 8, 9, 5
+NUM_ENVS, NUM_FIELD_STATES = 8, 9
+FIELD_TURNS = 5 + 2  # FieldRamp's longest, plus a resonant Improvise
 EVENT_RESONANCE_UNLOCKED = 0x6A
 RESONANCE_ACTIVE = 1 << 7
 TRAINER_MAX_HP = 24
@@ -196,7 +197,7 @@ class Fuzzer:
         m[at["wFieldEnv"]] = rng.randrange(NUM_ENVS)
         if rng.random() < 0.3:
             m[at["wFieldState"]] = rng.randrange(1, NUM_FIELD_STATES)
-            m[at["wFieldTurns"]] = rng.randint(1, FIELD_TURNS)
+            m[at["wFieldTurns"]] = rng.randint(1, 5)
 
     def run(self, turns):
         rng = self.rng

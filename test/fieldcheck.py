@@ -33,7 +33,7 @@ from rominspect import load_symbols
 
 M = {"POUND": 0x01, "EMBER": 0x34, "WATER_GUN": 0x37, "ICE_BEAM": 0x3A, "THUNDERSHOCK": 0x54,
      "EARTHQUAKE": 0x59, "ROCK_THROW": 0x58, "SAND_ATTACK": 0x1C, "SMOKESCREEN": 0x6C,
-     "LICK": 0x7A, "GROWL": 0x2D, "SPLASH": 0x96}
+     "LICK": 0x7A, "GROWL": 0x2D, "SPLASH": 0x96, "QUICK_ATTACK": 0x62}
 ENV = {"room": 0, "leaf": 1, "sea": 2, "cave": 3, "tomb": 4, "snow": 5, "sand": 6, "wire": 7}
 STATE = {None: 0, "SOAK": 1, "ICE!": 2, "FIRE": 3, "DUG!": 4, "RUBL": 5, "DUST": 6, "ZAP!": 7, "DARK": 8}
 TURNS = 5
@@ -233,7 +233,7 @@ def main():
     print("Improvise:")
     from debugbattle import tap
 
-    def improvise(move, bond):
+    def improvise(move, bond, enemy="SPLASH"):
         """At the battle menu: FIGHT, then START on the first move."""
         w("wPartyMon1Bond", bond)
         for _ in range(30):
@@ -242,8 +242,11 @@ def main():
         p.memory[at["wTestBattlePlayerSelectedMove"]] = M[move]
         p.memory[at["wBattleMonPP"]] = 20
         for i in range(4):
-            p.memory[at["wEnemyMonMoves"] + i] = M["SPLASH"]
+            p.memory[at["wEnemyMonMoves"] + i] = M[enemy]
         write_word(p, at["wEnemyMonHP"], 900)
+        write_word(p, at["wBattleMonHP"], 999)
+        for k in seen:
+            seen[k] = {} if k != "texts" else 0
         w("wEnemyMonType1", NORMAL)
         w("wEnemyMonType2", NORMAL)
         rec.menu = rec.prompt = False
@@ -281,6 +284,25 @@ def main():
     check(state() == STATE["RUBL"] and m("wFieldOwner") & 1 == 0,
           f"once it has run down, Rock Throw brings down cover for you ({state()})")
     check(m("wFieldTurns") == TURNS + 2 - 1, f"a resonant Bond makes it last 2 turns longer ({m('wFieldTurns')} left)")
+
+    print("Techniques:")
+    w("wImprovise", 0)
+    w("wFieldState", 0)
+    w("wFieldTurns", 0)
+    improvise("QUICK_ATTACK", 100, enemy="POUND")
+    check(seen["missed"].get(1) == 1, f"improvised Quick Attack dodges the next attack (missed {seen['missed'].get(1)})")
+    check(state() == STATE[None], "and leaves no Field State")
+    w("wImprovise", 0)
+    w("wResonanceFlags", 0x80)  # resonating
+    w("wResonanceTurns", 3)
+    hp = word(p, at["wEnemyMonHP"])
+    improvise("POUND", 255, enemy="POUND")
+    before, dealt = seen["field"].get(1), seen["dealt"].get(1)
+    check(seen["dealt"].get(0, 0) > 0, f"a Counter Shield still attacks ({seen['dealt'].get(0)} damage)")
+    check(before is not None and dealt == max(before // 2, 1),
+          f"and halves the next attack on you: {before} -> {dealt}")
+    w("wResonanceFlags", 0)
+    w("wResonanceTurns", 0)
 
     print("Link battles:")
     w("wLinkState", 4)  # LINK_STATE_BATTLING, only while the move is used

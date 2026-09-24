@@ -56,6 +56,8 @@ DEF ACTION_BUTTON_CHAR     EQU '<NULL>'
 	const ACTION_BADGE_RESONANCE  ; 11 Resonance started
 	const ACTION_BADGE_DODGED     ; 12 a Dodge Phase without a scratch
 	const ACTION_BADGE_IMPROVISE  ; 13 a move used on the field
+	const ACTION_BADGE_SHIELD     ; 14 a Counter Shield
+	const ACTION_BADGE_CLASH      ; 15 a perfect brace cancelled the attack
 
 ; wActionCommandCue
 	const_def 1
@@ -516,6 +518,20 @@ ApplyActionCommand:
 
 ; damage x0.5, and a perfect brace hits back
 .brace
+	; with a close Pokemon, a perfect brace can meet the attack head on
+	ld a, [wActionCommandResult]
+	cp ACTION_RESULT_PERFECT
+	jr nz, .noClash
+	call TryClash
+	jr nc, .noClash
+	xor a
+	ld [wDamage], a
+	ld [wDamage + 1], a
+	ld a, ACTION_EFFECT_BLOCKED
+	ld [wActionCommandForceEffect], a
+	ld a, ACTION_BADGE_CLASH
+	jp .showBadge
+.noClash
 	ld hl, wDamage
 	ld a, [hli]
 	ld b, a
@@ -1000,6 +1016,8 @@ ActionBadgeStrings:
 	dw .resonance
 	dw .dodged
 	dw .improvise
+	dw .shield
+	dw .clash
 
 .early   db "TOO SOON@"
 .great   db "GREAT!@"
@@ -1014,3 +1032,5 @@ ActionBadgeStrings:
 .resonance db "RESONANCE!@"
 .dodged    db "DODGED!@"
 .improvise db "IMPROV!@"
+.shield    db "SHIELD!@"
+.clash     db "CLASH!@"

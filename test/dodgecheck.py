@@ -128,9 +128,9 @@ class DodgeBattle(Battle):
             screen = bytes(p.memory[base + i] for i in range(360))
             self.phases.append((p.frame_count - self._start, screen == self._screen))
         elif name == "CheckDodgeHit":
-            if self.force == "none":
-                self.w("wActionCommandFrame", 200)  # the spawn timer
-            elif self.force in ("once", "always") and (self.force == "always" or not self.forced):
+            if self.force in ("none", "once"):
+                self.w("wActionCommandFrame", 200)  # the spawn timer: no real rocks
+            if self.force in ("once", "always") and (self.force == "always" or not self.forced):
                 if not self.m("wActionCommandBadgeTimer"):  # no grace left
                     y, x = self.m("wDodgeY"), self.m("wDodgeX")
                     p.memory[self.a("wTileMap") + y * 20 + x] = ROCK

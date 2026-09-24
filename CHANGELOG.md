@@ -264,6 +264,14 @@ Integration build sha1 `493aea78c62e631b76d3973f106f9ffcabf722aa`.
   It needs Bond 100, can be used once every 3 turns, and a resonant Bond makes
   the state last 2 turns longer. It prints no text: an IMPROV! badge shows.
   Brock's badge scene explains the button.
+- **Anime-style techniques, unlocked by Bond.**
+  - Improvising Quick Attack, Agility or Double Team dodges the next attack.
+  - Improvising while resonating is a Counter Shield: the attack goes ahead
+    and the next hit on you is halved.
+  - With Bond 150, a perfect brace against an attack your last move beats
+    (Water on Fire, Electric on Water...) cancels it outright (CLASH!).
+  - A Field State survives switching, so one Pokemon can set up a combo for
+    the next.
 - **The next field-changing move replaces the state.** Boosts, miss chances
   and durations grow with badges (`FieldRamp`). There is no text, so battles
   are no longer, and link battles have no field.
@@ -461,7 +469,11 @@ New checks under `test/`, all run against each build:
     with no damage and one PP spent; a second Improvise inside the wait is
     refused; Rock Throw gives cover, and lasts 2 turns longer with Bond 255.
   The Improvise check caught the turn count being lost to the Bond lookup, so
-  a state lasted 0 turns (then 255).
+  a state lasted 0 turns (then 255). It also checks:
+  - an improvised Quick Attack makes the next attack miss;
+  - a Counter Shield still hits and halves the next attack exactly.
+  `resonancecheck.py` checks a clash cancels Ember after Water Gun at Bond
+  150, and only braces below that.
   It found a crash on the first draft: see `bankcheck.py`.
 - `bankcheck.py` - reads every `.asm` file against the linker's symbols and
   fails on any plain `call`/`jp`/`jr` from one switchable ROM bank into

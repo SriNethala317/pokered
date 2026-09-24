@@ -126,6 +126,7 @@ GetFieldMove:
 ApplyFieldToAttack::
 	call IsLinkBattle
 	ret nz
+	call ApplyTechniques
 	ld a, [wFieldState]
 	and a
 	ret z

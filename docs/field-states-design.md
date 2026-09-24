@@ -68,8 +68,7 @@ cleared with the battle data, and they took WRAM0 from 30 bytes free to 26.
 - The countdown runs at the top of the battle loop, which is entered again
   after a Pokemon faints and is replaced, so a faint mid-turn costs the state an
   extra turn.
-- Still to build: the anime-style techniques, and gym arenas redesigned around
-  the states.
+- Still to build: gym arenas redesigned around the states.
 
 ## Improvise
 
@@ -97,3 +96,25 @@ cleared with the battle data, and they took WRAM0 from 30 bytes free to 26.
   button is explained once, in Brock's badge scene.
 - **RAM:** 1 byte, `wImprovise`, leaving WRAM0 with 25 bytes free.
 
+
+## Anime-style techniques
+
+Unlocked by Bond, and there are no story moments yet (**provisional**).
+
+- **Mobility dodge (Bond 100):** improvise Quick Attack, Agility or Double
+  Team, and the next attack on you misses.
+- **Counter Shield (Resonance):** improvise while resonating, and the move
+  attacks as usual and also halves the next attack on you.
+- **Clash (Bond 150):** a perfect brace meets the incoming attack head on and
+  cancels it outright (CLASH!), if your Pokemon's last move beats its type:
+  - Water beats Fire, and Fire beats Grass and Ice.
+  - Grass beats Water, and Electric beats Water.
+  - Ice beats Grass and Dragon.
+  - Ground beats Electric, and Rock beats Fire.
+  - Fighting beats Normal, Psychic beats Fighting, and Ghost beats Psychic.
+  The brace's own +1 Bond counts toward the 150.
+- **Combo chains:** a Field State survives switching, so one Pokemon sets it
+  up and the next exploits it (soak with Lapras, switch to Jolteon).
+
+A dodge or shield that is not used fades when the next Improvise becomes
+ready. None of it prints text; it uses the badges IMPROV!, SHIELD! and CLASH!.

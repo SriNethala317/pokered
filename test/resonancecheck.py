@@ -38,7 +38,7 @@ BOND_RESONANT = 200
 ACTIVE, STUNNED = 1 << 7, 1 << 6
 REFUNDS = 0b111
 EVENT_RESONANCE_UNLOCKED = 0x6A
-BADGE_BROKEN, BADGE_RESONANCE = 9, 11
+BADGE_BROKEN, BADGE_RESONANCE, BADGE_CLASH = 9, 11, 15
 CANNOT_MOVE = 0xFF
 CAP, READY, RUNNING = 0x62, 0xEC, 0xED
 HUD = (9, 8)
@@ -97,6 +97,7 @@ def main():
 
     # extra readings: the player's chosen move each time it executes, the
     # windows as armed, every PrintText, and when TryResonance runs
+    inv = sorted((a, b, n) for n, (b, a) in symbols.items())
     seen = {"badges": [], "moves": [], "perfect": {}, "texts": 0, "try": None, "menu_after_try": None}
 
     def on(name):
@@ -107,6 +108,10 @@ def main():
             seen["perfect"].setdefault(side, r.m("wActionCommandPerfect"))
         elif name == "PrintText":
             seen["texts"] += 1
+            if "-v" in sys.argv:
+                hl = p.register_file.HL
+                near = [n for a, b, n in inv if a <= hl and (b == p.memory[0xFFB8] or a < 0x4000)]
+                seen.setdefault("which", []).append(near[-1] if near else hex(hl))
         elif name == "ShowActionBadge":
             seen["badges"].append(p.register_file.A)
         elif name == "TryResonance":
@@ -233,12 +238,31 @@ def main():
     check(r.hud_cap() in (CAP, READY), f"the cap is back to the meter ({r.hud_cap():#x})")
 
     print("No text boxes:")
-    r.set(bond=BOND_RESONANT)
-    turn()
-    plain = seen["texts"]
-    r.set(turns=3, flags=ACTIVE, bond=BOND_RESONANT)
-    turn()
-    check(seen["texts"] == plain, f"a turn of Resonance prints {seen['texts']} texts, a plain one {plain}")
+    # a critical hit or a miss prints a line of its own, so compare the fewest
+    # texts over a few turns of each
+    plain, resonant = [], []
+    for _ in range(3):
+        r.set(bond=BOND_RESONANT)
+        turn()
+        plain.append(seen["texts"])
+        r.set(turns=3, flags=ACTIVE, bond=BOND_RESONANT)
+        turn()
+        resonant.append(seen["texts"])
+        if "-v" in sys.argv:
+            print("   ", seen.pop("which", None))
+    r.set()
+    check(min(resonant) == min(plain), f"a turn of Resonance prints {resonant} texts, a plain one {plain}")
+
+    print("Clash:")
+    r.set(bond=150)
+    t = turn(player_move=0x37, enemy_move=0x34, presses={1: ("b", 3)}, badges=0)  # Water Gun, then Ember; every type taps at 0 badges
+    check(BADGE_CLASH in seen["badges"] and t.applied.get(1, [None])[0] == 0,
+          f"with Bond 150, a perfect brace on Ember after Water Gun cancels it (badges {seen['badges']}, "
+          f"dealt {t.applied.get(1)})")
+    # the perfect brace adds 1 Bond before the clash is judged, so start at 148
+    r.set(bond=148)
+    t = turn(player_move=0x37, enemy_move=0x34, presses={1: ("b", 3)}, badges=0)
+    check(BADGE_CLASH not in seen["badges"], "below Bond 150 it only braces")
 
     print("Breaking:")
     r.set(turns=3, pain=TRAINER_MAX_HP - 1, flags=ACTIVE, meter=5, bond=BOND_RESONANT)
