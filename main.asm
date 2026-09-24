@@ -359,3 +359,4 @@ INCLUDE "engine/items/tm_prices.asm"
 SECTION "Resonance Engine", ROMX
 
 INCLUDE "engine/battle/action_commands.asm"
+INCLUDE "engine/pokemon/bond.asm"

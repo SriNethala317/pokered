@@ -929,6 +929,8 @@ OaksLabMonChoiceMenu:
 	ld a, [wCurPartySpecies]
 	ld [wPokedexNum], a
 	call AddPartyMon
+	ld a, STARTER_BOND ; your partner from the first minute
+	ld [wPartyMon1Bond], a
 	ld hl, wStatusFlags4
 	set BIT_GOT_STARTER, [hl]
 	ld a, PAD_SELECT | PAD_START | PAD_CTRL_PAD

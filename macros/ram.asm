@@ -12,7 +12,8 @@ MACRO box_struct
 \1Type::
 \1Type1::      db
 \1Type2::      db
-\1CatchRate::  db
+\1CatchRate:: ; Bond once the Pokemon exists (MON_BOND)
+\1Bond::       db
 \1Moves::      ds NUM_MOVES
 \1OTID::       dw
 \1Exp::        ds 3

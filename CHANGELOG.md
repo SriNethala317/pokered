@@ -128,6 +128,23 @@ Integration build sha1 `493aea78c62e631b76d3973f106f9ffcabf722aa`.
   and CANCEL underneath; up and down wrap between the top row and CANCEL as
   before.
 
+### Bond
+
+- **Every Pokemon now has a Bond with you, from 0 to 255.** It is the first
+  half of the Resonance system (see `docs/resonance-design.md`); Resonance
+  itself is not in yet, so for now Bond only grows and falls.
+  - It lives in the catch rate byte of each party and box Pokemon. Gen 1 never
+    reads that byte again once a Pokemon exists (it only matters as a held item
+    when trading to Gen 2), so Bond costs no RAM and survives the PC and saving.
+  - Every new Pokemon starts at 0: caught, gifted, traded in the game or over
+    the link cable. Your starter starts at 64.
+  - It grows by 1 for the lead Pokemon every 16 steps (the first one that can
+    still fight), and by 2 for every Pokemon that takes part in beating an enemy
+    Pokemon. Exp. All shares experience but not Bond.
+  - It falls by 10 when the Pokemon faints.
+  - Saves from before this change keep the old catch rate in that byte, so
+    their Pokemon start with a Bond equal to their species' catch rate.
+
 ### Battle mechanics
 
 - **Each move now has its own damage category.** In vanilla a move's type alone
@@ -191,6 +208,14 @@ Integration build sha1 `493aea78c62e631b76d3973f106f9ffcabf722aa`.
   check for a fainted target, so it costs a turn whatever the outcome.
 
 ### Battle engine fixes
+
+- **Special attacks no longer cost two extra frames a turn.** Splitting the
+  Special stat scaled it with the engine's general multiply and divide, which
+  took about a third of a frame per attack and added a lag frame or two to every
+  special move, even with action commands off. The factor is at most 32 and a
+  stat at most 999, so it is now a 16-bit shift and add, about ten times faster.
+  With action commands off, battles are now frame for frame the same length as
+  vanilla.
 
 - **Focus Energy and Dire Hit now raise the critical hit rate.** In vanilla they
   divide the critical hit chance by four instead of multiplying it, so using
@@ -263,6 +288,14 @@ New checks under `test/`, all run against each build:
   `pokered_debug.gbc`. Blue's targets are still in the Makefile but are no
   longer built, patched or tested, and every battle check runs on the Red
   debug build. `make bps` writes `pokered.bps` only.
+- `bondcheck.py` - plays the debug build to check Bond: every Pokemon the debug
+  new game adds starts at 0, the 16th step gives the lead 1 and other steps
+  nothing, a fainted lead is passed over, a win gives 2 (once, even with Exp.
+  All in the bag), fainting costs 10, and Bond stops at 0 and 255.
+- `trapcheck.py` now allows 1,500 frames for a Hyper Beam knockout turn. The
+  recharge flag is set about 150 frames after the target's HP reaches 0, so a
+  knockout late in a 900-frame turn could miss it and fail the check although
+  the recharge was set.
 - `fuzzbattle.py` - plays hundreds of turns of the debug battle with a random
   move on each side (every move that keeps a wild battle going), random badges,
   option, animation setting, HP and streak, and buttons mashed on almost every

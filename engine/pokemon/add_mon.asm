@@ -168,7 +168,8 @@ _AddPartyMon::
 	ld a, [hli]       ; type 2
 	ld [de], a
 	inc de
-	ld a, [hli]       ; catch rate (held item in gen 2)
+	inc hl            ; catch rate: the slot holds Bond, and new Pokemon start with none
+	xor a
 	ld [de], a
 	ld hl, wMonHMoves
 	ld a, [hli]

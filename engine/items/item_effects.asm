@@ -2772,6 +2772,8 @@ SendNewMonToBox:
 	ld de, wBoxMon1
 	ld bc, wEnemyMonDVs - wEnemyMon
 	call CopyData
+	xor a
+	ld [wBoxMon1Bond], a ; the catch rate slot holds Bond, and it starts at none
 	ld hl, wPlayerID
 	ld a, [hli]
 	ld [de], a

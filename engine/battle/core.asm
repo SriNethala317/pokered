@@ -962,6 +962,10 @@ PlayBattleVictoryMusic:
 	jp Delay3
 
 HandlePlayerMonFainted:
+	ld a, [wPlayerMonNumber]
+	ld e, a
+	ld d, BOND_FAINT
+	callfar ChangeBond
 	ld a, 1
 	ld [wInHandlePlayerMonFainted], a
 	call RemoveFaintedPlayerMon
@@ -4371,22 +4375,26 @@ ScaleSpecialStat:
 	ld de, SpecialSplitFactors
 	add hl, de
 	ld a, [hl]
-	pop hl
-	ldh [hMultiplier], a
-	xor a
-	ldh [hMultiplicand + 0], a
-	ld a, h
-	ldh [hMultiplicand + 1], a
+	pop de ; de = the stat
+; Multiply and Divide cost about 12,000 cycles a call, and a special attack makes
+; two: a third of a frame. A factor is at most 32 (see special_split) and a stat
+; at most 999, so the product fits in 16 bits: shift and add over the factor's
+; bits, then shift right by 4.
+	ld hl, 0
+.multiply
+	srl a
+	jr nc, .nextBit
+	add hl, de
+.nextBit
+	sla e
+	rl d
+	and a
+	jr nz, .multiply
 	ld a, l
-	ldh [hMultiplicand + 2], a
-	call Multiply
-	ld a, 16
-	ldh [hDivisor], a
-	ld b, 4
-	call Divide
-	ldh a, [hQuotient + 2]
-	ld h, a
-	ldh a, [hQuotient + 3]
+REPT 4
+	srl h
+	rra
+ENDR
 	ld l, a
 	pop de
 	pop bc

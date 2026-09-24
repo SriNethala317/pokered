@@ -21,6 +21,16 @@ GainExperience:
 	and a ; is mon's gain exp flag set?
 	pop hl
 	jp z, .nextMon ; if mon's gain exp flag not set, go to next mon
+	ld a, [wBoostExpByExpAll]
+	and a ; Bond is for taking part, not for sharing Exp. All
+	jr nz, .gotBond
+	push hl
+	ld a, [wWhichPokemon]
+	ld e, a
+	ld d, BOND_WIN
+	callfar ChangeBond
+	pop hl
+.gotBond
 	ld de, (MON_HP_EXP + 1) - (MON_HP + 1)
 	add hl, de
 	ld d, h

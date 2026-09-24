@@ -34,6 +34,10 @@ TRAP_TURNS = 12
 # Hyper Beam has to knock the target out in one hit for this to test anything.
 KO_ENEMY_HP = 1
 KO_TURNS = 6
+# The recharge flag is set about 150 frames after the target's HP reaches 0,
+# once the HP bar and the faint text are done, so a knockout late in a turn
+# needs longer than TURN_FRAMES to show it.
+KO_TURN_FRAMES = 1500
 
 
 def arm(p, at, move_id, enemy_hp, heal_player):
@@ -109,7 +113,7 @@ def hyper_beam_recharges_after_a_knockout(p, at):
         recharged = False
         fainted = False
         used_hyper_beam = False
-        for frame in range(TURN_FRAMES):
+        for frame in range(KO_TURN_FRAMES):
             if frame % 8 == 0:
                 p.button_press("a")
             elif frame % 8 == 2:
@@ -117,6 +121,8 @@ def hyper_beam_recharges_after_a_knockout(p, at):
             p.tick()
             if p.memory[at["wPlayerBattleStatus2"]] & NEEDS_TO_RECHARGE:
                 recharged = True
+                if fainted:
+                    break
             if word(p, at["wEnemyMonHP"]) == 0:
                 fainted = True
             if p.memory[at["wPlayerMoveNum"]] == HYPER_BEAM:

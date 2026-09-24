@@ -818,6 +818,10 @@ TradeCenter_Trade:
 	ld a, [wPartyCount]
 	dec a
 	ld [wWhichPokemon], a
+	ld hl, wPartyMon1Bond ; a Pokemon traded in has no Bond with you yet
+	ld bc, PARTYMON_STRUCT_LENGTH
+	call AddNTimes
+	ld [hl], 0
 	ld a, TRUE
 	ld [wForceEvolution], a
 	ld a, [wTradingWhichEnemyMon]

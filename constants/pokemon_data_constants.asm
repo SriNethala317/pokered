@@ -34,6 +34,8 @@ rsset MON_TYPE
 DEF MON_TYPE1      rb
 DEF MON_TYPE2      rb
 DEF MON_CATCH_RATE rb
+; Gen 1 never reads the catch rate again once a Pokemon exists, so it holds Bond
+DEF MON_BOND EQU MON_CATCH_RATE
 DEF MON_MOVES      rb NUM_MOVES
 DEF MON_OTID       rw
 DEF MON_EXP        rb 3
@@ -100,3 +102,13 @@ DEF WILDDATA_LENGTH EQU 1 + NUM_WILDMONS * 2
 ; PP in box_struct (see macros/ram.asm)
 DEF PP_UP_MASK EQU %11000000 ; number of PP Up used
 DEF PP_MASK    EQU %00111111 ; currently remaining PP
+
+; Bond, see engine/pokemon/bond.asm and docs/resonance-design.md
+DEF MAX_BOND      EQU 255
+DEF BOND_RESONANT EQU 200 ; Bond needed to Resonate
+DEF STARTER_BOND  EQU 64
+DEF BOND_STEPS    EQU 16  ; steps as the lead per BOND_WALK (a power of 2)
+DEF BOND_WALK     EQU 1
+DEF BOND_WIN      EQU 2   ; for each enemy Pokemon beaten while taking part
+DEF BOND_LANDED   EQU 1   ; for a PERFECT or COUNTER
+DEF BOND_FAINT    EQU -10
