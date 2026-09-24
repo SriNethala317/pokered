@@ -215,9 +215,13 @@ def main():
     for name, (cls, glyph) in LEADERS.items():
         b = brock(rom, sym, opponent=OPP_ID_OFFSET + cls)
         state, during = bot(mirrored=name == "Sabrina")
-        b.stage(player_move=POUND, enemy_move=POUND, player_fast=False, badges=0)
-        b.turn(stage=lambda: b.stage(player_move=POUND, enemy_move=POUND,
-                                     player_fast=False, badges=0), during=during)
+        # Blaine's AI spends random turns on a Super Potion, so allow a few
+        # turns for the first damaging attack
+        for _ in range(3):
+            b.turn(stage=lambda: b.stage(player_move=POUND, enemy_move=POUND,
+                                         player_fast=False, badges=0), during=during)
+            if b.phases:
+                break
         opened = len(b.phases) == 1
         hits = b.m("wDodgeHits")
         check(opened and G[glyph] in state["seen"],

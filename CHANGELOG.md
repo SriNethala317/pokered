@@ -394,6 +394,11 @@ Integration build sha1 `493aea78c62e631b76d3973f106f9ffcabf722aa`.
 
 ### Battle engine fixes
 
+- **A burning field no longer redraws both HUDs every turn.** The singe redrew
+  both sides' names, levels and bars even when one side is Fire-type or
+  fainted and nothing changed, which cost 83% of a frame each burning turn. Now
+  each side is redrawn only if it was singed (about 70% less).
+
 - **Special attacks no longer cost two extra frames a turn.** Splitting the
   Special stat scaled it with the engine's general multiply and divide, which
   took about a third of a frame per attack and added a lag frame or two to every
