@@ -480,7 +480,7 @@ FieldAfterMove::
 	inc hl
 	ld a, [hl] ; FIELD_RAMP_TURNS
 	ld [wFieldTurns], a
-	jr DrawFieldLabel
+	jp DrawFieldLabel
 
 ; A move that spends a state does not leave a new one in the same breath:
 ; otherwise every Electric move in the Power Plant would recharge the next.
@@ -511,18 +511,28 @@ FieldNewTurn::
 	ret nz
 	jr ClearField
 
+; Redraws only whichever HUD(s) Singe actually changed: a field can go whole
+; turns doing nothing (both sides Fire-type, or one already fainted), and
+; DrawHUDsAndHPBars redraws both HUDs in full -- name, level, status, border
+; and all -- so it is skipped on the side(s) that had nothing to show for it.
 SingeBothSides:
 	ld hl, wBattleMonHP
 	ld de, wBattleMonType1
 	call Singe
+	jr nc, .noPlayerRedraw
+	callfar DrawPlayerHUDAndHPBar
+.noPlayerRedraw
 	ld hl, wEnemyMonHP
 	ld de, wEnemyMonType1
 	call Singe
-	callfar DrawHUDsAndHPBars
+	jr nc, .noEnemyRedraw
+	callfar DrawEnemyHUDAndHPBar
+.noEnemyRedraw
 	ret
 
 ; hl = HP (then max HP 12 bytes on in a battle struct), de = types.
 ; A Pokemon that is not Fire-type loses 1/16 of its max HP, at least 1.
+; Returns carry if HP actually changed (SingeBothSides only redraws then).
 Singe:
 	ld a, [de]
 	cp FIRE
@@ -556,10 +566,14 @@ Singe:
 	ld a, [hl]
 	sbc b
 	ld [hl], a
-	ret nc
-	xor a ; fainted
+	jr c, .fainted
+	scf
+	ret
+.fainted
+	xor a
 	ld [hli], a
 	ld [hl], a
+	scf
 	ret
 
 ; The label in the enemy's HUD: the Field State, or the place if there is none.
