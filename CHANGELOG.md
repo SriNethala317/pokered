@@ -194,6 +194,21 @@ Integration build sha1 `34dcd2ae05d0e0c55304cb5f9f7ee403961dbde6`.
     - the unlock is at Brock;
     - the final battle theme plays while it lasts.
 
+### Rival Sync (story: the Sync Collar)
+
+- **The rival's collar forces a Resonance.** From the SS Anne on, when a rival
+  Pokemon's HP first drops below half, it may be forced to Resonate (FOE
+  SYNC!). Its next two attacks do x1.5. Then the collar takes its toll: it
+  loses a turn (FOE STUN), the opening to punish.
+  - Each rival Pokemon is forced at most once.
+  - The chance grows with badges: 50%, 60%, 75%, 90%, then always.
+  - It adds no text. Other trainers and link battles never do it.
+  - It uses 2 bytes of RAM (23 free).
+- **Fixed before release:** two routines returned "no" without clearing carry.
+  `callfar` passes the caller's flags straight through, so a leftover carry
+  read as "yes". This made the rival lose every turn, and could have skipped
+  one of your moves after an Improvise check. Both now clear it.
+
 ### Open world: level scaling
 
 - **Gym leaders 2 to 7, their gyms and the rival follow your badges.** Each
@@ -528,6 +543,14 @@ New checks under `test/`, all run against each build:
   name unwritten, which the ROM rightly refuses). `test/web/*.mjs` test the
   page's own code in node, including a full trade relayed through a third
   player.
+- `rivalcheck.py` - the SS Anne rival below half HP at 8 badges:
+  - FOE SYNC!, then exactly two x1.5 attacks, then FOE STUN and a lost turn;
+  - never twice for the same Pokemon, no extra text, and never for a
+    Youngster.
+- `fuzzbattle.py` leaves Rage out: it locks the user in until the battle ends,
+  which never comes against a foe using only status moves. That is vanilla
+  behaviour, not a hang. `fieldcheck.py` resets both sides' stat stages
+  between staged turns and compares text counts over three turns.
 - `gatecheck.py` - uses CUT and SURF from the party menu in the debug new
   game and reads the message. CUT with no badges gets past the badge check,
   SURF with two badges is refused, and SURF with three (none of them the Soul

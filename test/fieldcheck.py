@@ -114,6 +114,13 @@ def main():
 
     KEEP = object()
 
+    def neutral_stages():
+        """Sand-Attack and Smokescreen turns would otherwise pile up accuracy
+        drops, and a later staged attack would miss."""
+        for side in ("wPlayerMonStatMods", "wEnemyMonStatMods"):
+            for i in range(8):
+                p.memory[s[side][1] + i] = 7
+
     def turn(player, enemy="SPLASH", env=None, state=KEEP, **kw):
         if env is not None:
             w("wFieldEnv", ENV[env])
@@ -123,6 +130,7 @@ def main():
         # a Normal-type foe, so Electric moves land on the debug battle's Rhydon
         w("wEnemyMonType1", NORMAL)
         w("wEnemyMonType2", NORMAL)
+        neutral_stages()
         for k in seen:
             seen[k] = {} if k != "texts" else 0
         take_turn(p, at, rec, player_move=M[player], enemy_move=M[enemy], badges=0, **kw)
@@ -225,10 +233,14 @@ def main():
         turn("SPLASH")
         left.append(m("wFieldTurns"))
     check(state() == STATE[None], f"a state lasts {TURNS} turns: turns left {left}")
-    turn("POUND", state=None)
-    plain = seen["texts"]
-    turn("POUND", state="DUST")
-    check(seen["texts"] == plain or seen["missed"].get(0), f"a turn in DUST prints {seen['texts']} texts, a plain one {plain}")
+    # a critical hit or a miss prints a line of its own: compare the fewest
+    plain, dusty = [], []
+    for _ in range(3):
+        turn("POUND", state=None)
+        plain.append(seen["texts"])
+        turn("POUND", state="DUST")
+        dusty.append(seen["texts"])
+    check(min(dusty) == min(plain), f"a turn in DUST prints {dusty} texts, a plain one {plain}")
 
     print("Improvise:")
     from debugbattle import tap
@@ -245,6 +257,7 @@ def main():
             p.memory[at["wEnemyMonMoves"] + i] = M[enemy]
         write_word(p, at["wEnemyMonHP"], 900)
         write_word(p, at["wBattleMonHP"], 999)
+        neutral_stages()
         for k in seen:
             seen[k] = {} if k != "texts" else 0
         w("wEnemyMonType1", NORMAL)

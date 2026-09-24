@@ -2978,6 +2978,8 @@ SelectEnemyMove:
 	ld a, [hl]
 	jr .done
 .noLinkBattle
+	callfar RivalSyncStunned ; the rival's collar can cost it a turn
+	jr c, .unableToSelectMove
 	ld a, [wEnemyBattleStatus2]
 	and (1 << NEEDS_TO_RECHARGE) | (1 << USING_RAGE) ; need to recharge or using rage
 	ret nz

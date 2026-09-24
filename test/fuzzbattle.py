@@ -31,9 +31,10 @@ ROM = "pokered_debug.gbc"
 SYM = "pokered_debug.sym"
 
 # Moves are numbered from POUND = 1 in constants/move_constants.asm.
-# Roar, Whirlwind and Teleport end a wild battle, and Mimic opens a menu the
-# fuzzer cannot drive, so they are left out.
-SKIP = {18, 46, 100, 102}  # WHIRLWIND, ROAR, TELEPORT, MIMIC
+# Roar, Whirlwind and Teleport end a wild battle, Mimic opens a menu the
+# fuzzer cannot drive, and Rage locks the user in until the battle ends, which
+# against a foe using only status moves never comes (vanilla, not a hang).
+SKIP = {18, 46, 99, 100, 102}  # WHIRLWIND, ROAR, RAGE, TELEPORT, MIMIC
 NUM_ATTACKS = 165
 POOL = [m for m in range(1, NUM_ATTACKS + 1) if m not in SKIP]
 

@@ -58,6 +58,8 @@ DEF ACTION_BUTTON_CHAR     EQU '<NULL>'
 	const ACTION_BADGE_IMPROVISE  ; 13 a move used on the field
 	const ACTION_BADGE_SHIELD     ; 14 a Counter Shield
 	const ACTION_BADGE_CLASH      ; 15 a perfect brace cancelled the attack
+	const ACTION_BADGE_FOE_SYNC   ; 16 the rival's collar forced a Resonance
+	const ACTION_BADGE_FOE_STUN   ; 17 and it cost the rival a turn
 
 ; wActionCommandCue
 	const_def 1
@@ -1018,6 +1020,8 @@ ActionBadgeStrings:
 	dw .improvise
 	dw .shield
 	dw .clash
+	dw .foeSync
+	dw .foeStun
 
 .early   db "TOO SOON@"
 .great   db "GREAT!@"
@@ -1034,3 +1038,5 @@ ActionBadgeStrings:
 .improvise db "IMPROV!@"
 .shield    db "SHIELD!@"
 .clash     db "CLASH!@"
+.foeSync   db "FOE SYNC!@"
+.foeStun   db "FOE STUN@"

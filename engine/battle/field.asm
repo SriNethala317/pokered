@@ -151,6 +151,7 @@ ApplyFieldToAttack::
 	call IsLinkBattle
 	ret nz
 	call ApplyTechniques
+	call ApplyRivalSync
 	ld a, [wFieldState]
 	and a
 	ret z

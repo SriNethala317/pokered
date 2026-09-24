@@ -48,7 +48,10 @@ TryImprovise::
 ImproviseMove::
 	ld hl, wImprovise
 	bit IMPROVISE_CHOSEN, [hl]
-	ret z ; and carry is clear
+	jr nz, .chosen
+	and a ; callfar passes the caller's flags through, so clear carry
+	ret
+.chosen
 	res IMPROVISE_CHOSEN, [hl]
 	ld a, [hl]
 	or IMPROVISE_COOLDOWN

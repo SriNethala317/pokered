@@ -558,6 +558,10 @@ wFieldTurns:: db
 wFieldOwner:: db
 ; see engine/battle/improvise.asm
 wImprovise:: db
+; the rival's forced Resonance, see RivalSyncNewTurn in engine/battle/resonance.asm
+wRivalSync:: db
+; one bit per enemy party slot: it has already been forced
+wRivalSyncDone:: db
 wMiscBattleDataEnd::
 ENDU
 

@@ -158,6 +158,7 @@ TryResonance::
 ; Called at the start of every turn. Counts down Resonance, and takes the turn
 ; of a trainer who was stunned by a break: carry if the player loses this turn.
 ResonanceNewTurn::
+	call RivalSyncNewTurn
 	ld hl, wResonanceFlags
 	bit RESONANCE_STUNNED, [hl]
 	jr z, .notStunned
@@ -536,3 +537,123 @@ UnlockResonance::
 	ret nc
 	ld [hl], BOND_RESONANT
 	ret
+
+
+; Rival Sync: the rival's collar forces a Resonance (docs/story.md).
+;
+; From the SS Anne on, when a rival Pokemon's HP first drops below half it may
+; be forced to Resonate: its attacks do x1.5 for RIVAL_SYNC_TURNS of its turns,
+; and then it is stunned and loses a turn, the opening a trusting bond knows to
+; punish. Each rival Pokemon is forced at most once. The chance grows with your
+; badges (RivalSyncChance). No text: FOE SYNC! and FOE STUN badges.
+
+DEF RIVAL_SYNC_TURNS   EQU 2
+DEF RIVAL_SYNC_MASK    EQU %11 ; wRivalSync: turns of boost left
+DEF RIVAL_SYNC_STUNNED EQU 6   ; wRivalSync: the rival loses this turn
+
+RivalSyncNewTurn:
+	ld a, [wLinkState]
+	cp LINK_STATE_BATTLING
+	ret z
+	ld a, [wIsInBattle]
+	cp 2
+	ret nz
+	ld a, [wTrainerClass]
+	cp RIVAL2
+	jr z, .rival
+	cp RIVAL3
+	ret nz
+.rival
+	ld hl, wRivalSync
+	ld a, [hl]
+	and RIVAL_SYNC_MASK
+	jr z, .notSyncing
+	dec [hl]
+	ld a, [hl]
+	and RIVAL_SYNC_MASK
+	ret nz
+	; the collar's toll
+	set RIVAL_SYNC_STUNNED, [hl]
+	ld a, ACTION_BADGE_FOE_STUN
+	jp ShowActionBadge
+.notSyncing
+	; below half HP for the first time?
+	ld a, [wEnemyMonPartyPos]
+	ld c, a
+	ld b, FLAG_TEST
+	ld hl, wRivalSyncDone
+	predef FlagActionPredef
+	ld a, c
+	and a
+	ret nz
+	ld hl, wEnemyMonMaxHP
+	ld a, [hli]
+	ld d, a
+	ld e, [hl]
+	srl d
+	rr e ; de = half the max HP
+	ld hl, wEnemyMonHP
+	ld a, [hli]
+	ld b, a
+	ld c, [hl]
+	ld a, b
+	or c
+	ret z ; fainted
+	ld a, c
+	sub e
+	ld a, b
+	sbc d
+	ret nc ; still at half or above
+	ld a, [wEnemyMonPartyPos]
+	ld c, a
+	ld b, FLAG_SET
+	ld hl, wRivalSyncDone
+	predef FlagActionPredef
+	call GetBadgeRow
+	ld hl, RivalSyncChance
+	ld c, a
+	ld b, 0
+	add hl, bc
+	call Random
+	cp [hl]
+	ret nc
+	ld a, [wRivalSync]
+	or RIVAL_SYNC_TURNS
+	ld [wRivalSync], a
+	ld a, ACTION_BADGE_FOE_SYNC
+	jp ShowActionBadge
+
+; Called by SelectEnemyMove: carry if the rival loses this turn to the collar.
+RivalSyncStunned::
+	ld hl, wRivalSync
+	bit RIVAL_SYNC_STUNNED, [hl]
+	jr nz, .stunned
+	and a ; callfar passes the caller's flags through, so clear carry
+	ret
+.stunned
+	res RIVAL_SYNC_STUNNED, [hl]
+	scf
+	ret
+
+; Called with the Field States on each attack: a forced rival hits x1.5.
+ApplyRivalSync:
+	ldh a, [hWhoseTurn]
+	and a
+	ret z
+	ld a, [wRivalSync]
+	and RIVAL_SYNC_MASK
+	ret z
+	ld a, [wMoveMissed]
+	and a
+	ret nz
+	jp BoostDamage
+
+; the chance a rival Pokemon is forced below half HP, by your badges
+RivalSyncChance:
+	table_width 1
+	db 50 percent ; 0 badges
+	db 60 percent ; 1-2
+	db 75 percent ; 3-4
+	db 90 percent ; 5-6
+	db 100 percent - 1 ; 7-8
+	assert_table_length 5
