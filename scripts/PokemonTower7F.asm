@@ -193,6 +193,7 @@ PokemonTower7F_TextPointers:
 	dw_const PokemonTower7FRocket2Text, TEXT_POKEMONTOWER7F_ROCKET2
 	dw_const PokemonTower7FRocket3Text, TEXT_POKEMONTOWER7F_ROCKET3
 	dw_const PokemonTower7FMrFujiText,  TEXT_POKEMONTOWER7F_MR_FUJI
+	dw_const PokemonTower7FMastText,    TEXT_POKEMONTOWER7F_MAST
 
 PokemonTower7TrainerHeaders:
 	def_trainers
@@ -280,4 +281,8 @@ PokemonTower7FRocket3EndBattleText:
 
 PokemonTower7FRocket3AfterBattleText:
 	text_far _PokemonTower7FRocket3AfterBattleText
+	text_end
+
+PokemonTower7FMastText:
+	text_far _PokemonTower7FMastText
 	text_end

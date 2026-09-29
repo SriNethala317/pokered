@@ -1919,6 +1919,7 @@ DrawEnemyHUDAndHPBar:
 	call PrintLevel
 .skipPrintLevel
 	callfar DrawFieldLabel
+	callfar DrawSyncCollarIcon
 	ld hl, wEnemyMonHP
 	ld a, [hli]
 	ldh [hMultiplicand + 1], a

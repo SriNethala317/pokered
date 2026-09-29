@@ -49,3 +49,11 @@ _SilphCo5FRockerBattleText::
 	line "shouldn't be any"
 	cont "children here?"
 	done
+
+_SilphCo5FCollarLineText::
+	text "SYNC COLLARS roll"
+	line "off the line."
+
+	para "Each is stamped"
+	line "for TEAM ROCKET."
+	done

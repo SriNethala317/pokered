@@ -72,3 +72,9 @@ _RocketHideoutB4FRocket3AfterBattleText::
 	text "Oh no! I dropped"
 	line "the LIFT KEY!"
 	done
+
+_RocketHideoutB4FCollarCratesText::
+	text "Crates of SYNC"
+	line "COLLARS, stamped"
+	cont "SILPH CO."
+	done

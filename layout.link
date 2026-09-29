@@ -179,6 +179,9 @@ ROMX $2C
 	"Move Names"
 ROMX $2D
 	"Resonance Engine"
+ROMX $2E
+	"Tilesets 4"
+	"Rival Band Sprite"
 WRAM0
 	"Audio RAM"
 	org $c100

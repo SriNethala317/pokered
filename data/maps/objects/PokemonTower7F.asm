@@ -11,6 +11,8 @@ PokemonTower7F_Object:
 	warp_event  9, 16, POKEMON_TOWER_6F, 2
 
 	def_bg_events
+	bg_event 10,  1, TEXT_POKEMONTOWER7F_MAST
+	bg_event 11,  1, TEXT_POKEMONTOWER7F_MAST
 
 	def_object_events
 	object_event  9, 11, SPRITE_ROCKET, STAY, RIGHT, TEXT_POKEMONTOWER7F_ROCKET1, OPP_ROCKET, 19

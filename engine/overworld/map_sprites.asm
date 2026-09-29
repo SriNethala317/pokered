@@ -124,6 +124,14 @@ LoadMapSpriteTilePatterns:
 	jr nc, .noCarry2
 	inc h
 .noCarry2
+	ld a, b
+	cp SPRITE_BLUE
+	jr nz, .gotSpriteSheet
+	ld a, [wObtainedBadges]
+	bit BIT_BOULDERBADGE, a ; the rival has his SYNC BAND by Cerulean
+	jr z, .gotSpriteSheet
+	ld hl, BlueBandSpriteSheet
+.gotSpriteSheet
 	push hl
 	call ReadSpriteSheetData
 	push af
@@ -231,6 +239,11 @@ LoadMapSpriteTilePatterns:
 	dec b
 	jr nz, .zeroStoredPictureIDLoop
 	ret
+
+BlueBandSpriteSheet: ; an entry like SpriteSheetPointerTable's
+	dw BlueBandSprite
+	db 12 tiles
+	db BANK(BlueBandSprite)
 
 ; reads data from SpriteSheetPointerTable
 ; INPUT:

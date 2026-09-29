@@ -217,8 +217,25 @@ Integration build sha1 `34dcd2ae05d0e0c55304cb5f9f7ee403961dbde6`.
 - `test/storyscenes.py` plays every rewritten scene through its real script.
   It covers each rival battle both won and lost, and the Champion through the
   Hall of Fame and credits back to the title. `test/storytext.py` prints each
-  changed text box. `test/textlint.py` checks line widths.
-  `test/textlint.py` checks that every changed line fits in 18 tiles.
+  changed text box. `test/textlint.py` checks that every changed line fits in
+  18 tiles.
+
+### Story: the Sync plot on screen
+
+- Tower 7F: a radio mast stands behind Mr. Fuji, where the grave wall was. Read
+  it: ROCKET cables feed the BROADCAST.
+- Rocket Hideout B4F: the tables in Giovanni's room and in the bottom-left room
+  are now stacks of crates. Read them: SYNC COLLARS, stamped SILPH CO.
+- Silph Co. 5F: a conveyor under the machines in the top-left room carries
+  collars off the line. It blocks the row just under the machines.
+- The rival wears the SYNC BAND: on their overworld sprite once you have the
+  BOULDERBADGE (Cerulean needs it), and on their battle pics from Tower 2F on.
+- In a battle with the rival from Tower 2F on, a collar icon sits left of the
+  enemy's level: those Pokemon can be forced to Sync, then stunned.
+- The tilesets banks were full, so the Forest and Underground tilesets moved
+  to a new bank ($2E) along with the banded rival sprite.
+- `test/storyscenes.py props` reads the mast, both crate stacks and the
+  conveyor. `tools/rendermap.py` draws a map from its blocks to a PNG.
 
 ### Frenzy bosses: the Snorlax on Routes 12 and 16
 

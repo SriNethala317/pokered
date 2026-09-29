@@ -623,6 +623,21 @@ RivalSyncNewTurn:
 	ld a, ACTION_BADGE_FOE_SYNC
 	jp ShowActionBadge
 
+; The rival's Pokemon wear Sync Collars: mark them left of the enemy's level.
+DrawSyncCollarIcon::
+	ld a, [wIsInBattle]
+	cp 2
+	ret nz
+	ld a, [wTrainerClass]
+	cp RIVAL2
+	jr z, .collared
+	cp RIVAL3
+	ret nz
+.collared
+	ld a, '<COLLAR>'
+	ldcoord_a 2, 1
+	ret
+
 ; Called by SelectEnemyMove: carry if the rival loses this turn to the collar.
 RivalSyncStunned::
 	ld hl, wRivalSync

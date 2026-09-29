@@ -76,3 +76,12 @@ _PokemonTower7FRocket3AfterBattleText::
 	text "You're not getting"
 	line "away with this!"
 	done
+
+_PokemonTower7FMastText::
+	text "A radio mast."
+	line "ROCKET cables"
+	cont "feed it."
+
+	para "It hums with the"
+	line "BROADCAST."
+	done

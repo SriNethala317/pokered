@@ -24,6 +24,10 @@ SilphCo5F_Object:
 	warp_event  3, 15, SILPH_CO_3F, 6
 
 	def_bg_events
+	bg_event  2,  2, TEXT_SILPHCO5F_COLLAR_LINE
+	bg_event  3,  2, TEXT_SILPHCO5F_COLLAR_LINE
+	bg_event  4,  2, TEXT_SILPHCO5F_COLLAR_LINE
+	bg_event  5,  2, TEXT_SILPHCO5F_COLLAR_LINE
 
 	def_object_events
 	object_event 13,  9, SPRITE_SILPH_WORKER_M, STAY, NONE, TEXT_SILPHCO5F_SILPH_WORKER_M

@@ -85,6 +85,7 @@ RocketHideoutB4F_TextPointers:
 	dw_const PickUpItemText,                              TEXT_ROCKETHIDEOUTB4F_SILPH_SCOPE
 	dw_const PickUpItemText,                              TEXT_ROCKETHIDEOUTB4F_LIFT_KEY
 	dw_const RocketHideoutB4FGiovanniHopeWeMeetAgainText, TEXT_ROCKETHIDEOUTB4F_GIOVANNI_HOPE_WE_MEET_AGAIN
+	dw_const RocketHideoutB4FCollarCratesText,           TEXT_ROCKETHIDEOUTB4F_COLLAR_CRATES
 
 RocketHideout4TrainerHeaders:
 	def_trainers 2
@@ -200,4 +201,8 @@ RocketHideoutB4FRocket3AfterBattleText:
 
 .Text:
 	text_far _RocketHideoutB4FRocket3AfterBattleText
+	text_end
+
+RocketHideoutB4FCollarCratesText:
+	text_far _RocketHideoutB4FCollarCratesText
 	text_end

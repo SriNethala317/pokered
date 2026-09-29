@@ -170,6 +170,7 @@
 	charmap ".",         $e8
 
 	charmap "ァ",         $e9 ; katakana small a, unused
+	charmap "<COLLAR>",  $e9 ; redrawn as a Sync Collar for the enemy HUD
 	charmap "ゥ",         $ea ; katakana small u, unused
 	charmap "ェ",         $eb ; katakana small e, unused
 

@@ -212,6 +212,20 @@ def mt_moon(st):
 
 
 @scene
+def props(st):
+    """The Sync plot's props: the mast, the collar crates and the collar line."""
+    for name, map_name, x, y, label in [
+            ("props_mast", "POKEMON_TOWER_7F", 11, 2, "_PokemonTower7FMastText"),
+            ("props_crates", "ROCKET_HIDEOUT_B4F", 25, 6, "_RocketHideoutB4FCollarCratesText"),
+            ("props_crates2", "ROCKET_HIDEOUT_B4F", 13, 22, "_RocketHideoutB4FCollarCratesText"),
+            ("props_line", "SILPH_CO_5F", 3, 3, "_SilphCo5FCollarLineText")]:
+        st.reset()
+        st.warp(map_name, x, y)
+        st.p.screen.image.save(OUT / f"{name}_map.png")
+        play(st, name, go=talk_to(st, "up"), labels=[label])
+
+
+@scene
 def hideout(st):
     st.reset()
     st.warp("ROCKET_HIDEOUT_B4F", 25, 4)
