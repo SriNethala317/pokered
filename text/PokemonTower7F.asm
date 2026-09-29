@@ -6,13 +6,13 @@ _PokemonTower7FMrFujiRescueText::
 	line "came here of my"
 	cont "own free will."
 
-	para "I came to calm"
-	line "the soul of"
-	cont "CUBONE's mother."
+	para "The ghosts here"
+	line "are #MON worn"
+	cont "out by collars."
 
-	para "I think MAROWAK's"
-	line "spirit has gone"
-	cont "to the afterlife."
+	para "MAROWAK's spirit"
+	line "was the loudest."
+	cont "It rests now."
 
 	para "I must thank you"
 	line "for your kind"
@@ -41,11 +41,11 @@ _PokemonTower7FRocket1AfterBattleText::
 _PokemonTower7FRocket2BattleText::
 	text "This old guy came"
 	line "and complained"
-	cont "about us harming"
-	cont "useless #MON!"
+	cont "about our BROAD-"
+	cont "CAST mast!"
 
-	para "We're talking it"
-	line "over as adults!"
+	para "The ghosts power"
+	line "it. So what?"
 	done
 
 _PokemonTower7FRocket2EndBattleText::
@@ -54,9 +54,9 @@ _PokemonTower7FRocket2EndBattleText::
 	prompt
 
 _PokemonTower7FRocket2AfterBattleText::
-	text "#MON are only"
-	line "good for making"
-	cont "money!"
+	text "Every collar in"
+	line "KANTO hears this"
+	cont "signal, kid!"
 
 	para "Stay out of our"
 	line "business!"

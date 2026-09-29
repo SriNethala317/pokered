@@ -93,13 +93,15 @@ _Route16Biker6AfterBattleText::
 _Route16Text7::
 	text "A sleeping #MON"
 	line "blocks the way!"
+	cont "It twitches..."
 	done
 
 _Route16SnorlaxWokeUpText::
 	text "SNORLAX woke up!"
 
-	para "It attacked in a"
-	line "grumpy rage!"
+	para "The signal has it"
+	line "frantic! It's in"
+	cont "a FRENZY!"
 	done
 
 _Route16SnorlaxReturnedToMountainsText::

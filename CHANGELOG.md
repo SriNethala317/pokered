@@ -194,6 +194,23 @@ Integration build sha1 `34dcd2ae05d0e0c55304cb5f9f7ee403961dbde6`.
     - the unlock is at Brock;
     - the final battle theme plays while it lasts.
 
+### Story: the Sync plot in the dialogue
+
+- The dialogue now follows the story bible (`docs/story.md`). Oak calls trust
+  "a frequency you both must tune". The rival says "power beats trust", buys a
+  SYNC BAND from a Rocket at Cerulean, and wears their team down with it from
+  the SS Anne, through Tower 2F, Silph 7F and Route 22, to the Champion's room.
+  Losing there frees the rival's team from the band.
+- Mt. Moon's Rockets want fossils to test collars on. Giovanni's crates hold
+  SYNC COLLARS (Hideout). His Silph order is a bulk one. "Your bond is a collar
+  you chose to wear" (Viridian).
+- Tower 7F: the ghosts are worn-out collared Pokemon, and a mast carries the
+  broadcast. Mr. Fuji built the first collar, and his FLUTE "cuts through the
+  signal". The Snorlax are frantic, a Silph report lists the collar order,
+  Sabrina hates the broadcast, and the MASTER BALL was a collar's cage.
+- Only the text changed: labels, scripts and entry counts are vanilla's.
+  `test/textlint.py` checks that every changed line fits in 18 tiles.
+
 ### Frenzy bosses: the Snorlax on Routes 12 and 16
 
 - **The Tower's broadcast has the Snorlax frantic.** Talking to one starts a

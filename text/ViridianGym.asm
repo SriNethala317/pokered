@@ -6,11 +6,11 @@ _ViridianGymGiovanniPreBattleText::
 	line "resurrect TEAM"
 	cont "ROCKET here!"
 
-	para "But, you have"
-	line "caught me again!"
-	cont "So be it! This"
-	cont "time, I'm not"
-	cont "holding back!"
+	para "Your bond? It is"
+	line "only a collar you"
+	cont "chose to wear!"
+	cont "This time, I'm"
+	cont "not holding back!"
 
 	para "Once more, you"
 	line "shall face"
@@ -34,9 +34,9 @@ _ViridianGymGiovanniPostBattleAdviceText::
 	cont "TEAM ROCKET is"
 	cont "finished forever!"
 
-	para "I will dedicate my"
-	line "life to the study"
-	cont "of #MON!"
+	para "A bond I could"
+	line "not force... I"
+	cont "must study that."
 
 	para "Let us meet again"
 	line "some day!"

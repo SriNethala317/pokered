@@ -9,15 +9,15 @@ _ChampionsRoomRivalIntroText::
 	line "be strong to keep"
 	cont "me sharp!"
 
-	para "While working on"
-	line "#DEX, I looked"
-	cont "all over for"
-	cont "powerful #MON!"
+	para "My #MON barely"
+	line "stand anymore,"
+	cont "but the BAND"
+	cont "keeps them up!"
 
-	para "Not only that, I"
-	line "assembled teams"
-	cont "that would beat"
-	cont "any #MON type!"
+	para "Power beats"
+	line "trust. I told"
+	cont "you, back in"
+	cont "the lab!"
 
 	para "And now!"
 
@@ -69,9 +69,9 @@ _ChampionsRoomRivalAfterBattleText::
 	text "Why?"
 	line "Why did I lose?"
 
-	para "I never made any"
-	line "mistakes raising"
-	cont "my #MON..."
+	para "My BAND... it's"
+	line "gone quiet. My"
+	cont "#MON are free."
 
 	para "Darn it! You're"
 	line "the new #MON"
@@ -119,14 +119,14 @@ _ChampionsRoomOakDisappointedWithRivalText::
 	line "understand why"
 	cont "you lost?"
 
-	para "You have forgotten"
-	line "to treat your"
-	cont "#MON with"
-	cont "trust and love!"
+	para "A BAND forces a"
+	line "frequency. Trust"
+	cont "tunes it. Your"
+	cont "#MON knew it!"
 
-	para "Without them, you"
-	line "will never become"
-	cont "a champ again!"
+	para "Tune in to them,"
+	line "and you'll be a"
+	cont "champ again!"
 	done
 
 _ChampionsRoomOakComeWithMeText::

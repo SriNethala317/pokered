@@ -75,9 +75,9 @@ _OaksLabOak1YourPokemonCanFightText::
 
 _OaksLabOak1RaiseYourYoungPokemonText::
 	text "OAK: <PLAYER>,"
-	line "raise your young"
-	cont "#MON by making"
-	cont "it fight!"
+	line "trust is a"
+	cont "frequency you"
+	cont "both must tune."
 	done
 
 _OaksLabOak1DeliverParcelText::
@@ -250,13 +250,13 @@ _OaksLabRivalReceivedMonText::
 	text_end
 
 _OaksLabRivalIllTakeYouOnText::
-	text "<RIVAL>: Wait"
-	line "<PLAYER>!"
-	cont "Let's check out"
-	cont "our #MON!"
+	text "<RIVAL>: Power"
+	line "beats trust,"
+	cont "you'll see!"
+	cont "Let's fight!"
 
-	para "Come on, I'll take"
-	line "you on!"
+	para "Come on, let's"
+	line "settle this!"
 	done
 
 _OaksLabRivalIPickedTheWrongPokemonText::

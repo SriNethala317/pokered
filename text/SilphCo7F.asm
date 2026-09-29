@@ -155,26 +155,26 @@ _SilphCo7FRivalWaitedHereText::
 	cont "turn up if I"
 	cont "waited here!"
 
-	para "I guess TEAM"
-	line "ROCKET slowed you"
-	cont "down! Not that I"
-	cont "care!"
+	para "This BAND's got"
+	line "ROCKET tech in"
+	cont "it! Silph made"
+	cont "it, I bet!"
 
-	para "I saw you in"
-	line "SAFFRON, so I"
-	cont "decided to see if"
-	cont "you got better!"
+	para "My #MON zone"
+	line "out after, but"
+	cont "hey, results"
+	cont "matter more!"
 	done
 
 _SilphCo7FRivalDefeatedText::
 	text "Oh ho!"
-	line "So, you are ready"
-	cont "for BOSS ROCKET!"
+	line "Even with my"
+	cont "BAND? Not bad!"
 	prompt
 
 _SilphCo7FRivalVictoryText::
-	text "<RIVAL>: How can"
-	line "I put this?"
+	text "<RIVAL>: The"
+	line "BAND wins it!"
 
 	para "You're not good"
 	line "enough to play"

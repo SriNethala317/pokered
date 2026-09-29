@@ -2,30 +2,28 @@ _CeruleanCityRivalPreBattleText::
 	text "<RIVAL>: Yo!"
 	line "<PLAYER>!"
 
-	para "You're still"
-	line "struggling along"
-	cont "back here?"
+	para "Check out this"
+	line "SYNC BAND!"
 
-	para "I'm doing great!"
-	line "I caught a bunch"
-	cont "of strong and"
-	cont "smart #MON!"
+	para "A ROCKET guy"
+	line "sold it to me."
+	cont "Bond takes too"
+	cont "long, am I right?"
 
-	para "Here, let me see"
-	line "what you caught,"
-	cont "<PLAYER>!"
+	para "Let's see your"
+	line "#MON, <PLAYER>!"
 	done
 
 _CeruleanCityRivalDefeatedText::
-	text "Hey!"
-	line "Take it easy!"
-	cont "You won already!"
+	text "Hey! No fair,"
+	line "you don't even"
+	cont "need a BAND!"
 	prompt
 
 _CeruleanCityRivalVictoryText::
-	text "Heh!"
-	line "You're no match"
-	cont "for my genius!"
+	text "Heh! The BAND"
+	line "did it! My"
+	cont "#MON's dizzy."
 	prompt
 
 _CeruleanCityRivalIWentToBillsText::

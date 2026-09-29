@@ -14,10 +14,10 @@ _RocketHideoutB4FGiovanniHopeWeMeetAgainText::
 	line "raise #MON"
 	cont "with utmost care."
 
-	para "A child like you"
-	line "would never"
-	cont "understand what I"
-	cont "hope to achieve."
+	para "Those crates hold"
+	line "SYNC COLLARS."
+	cont "SILPH makes them."
+	cont "I make them count."
 
 	para "I shall step"
 	line "aside this time!"

@@ -38,13 +38,13 @@ _MrFujisHouseNidorinoText::
 _MrFujisHouseMrFujiIThinkThisMayHelpYourQuestText::
 	text "MR.FUJI: <PLAYER>."
 
-	para "Your #DEX quest"
-	line "may fail without"
-	cont "love for your"
-	cont "#MON."
+	para "Long ago, at"
+	line "SILPH, I built"
+	cont "the first collar."
 
-	para "I think this may"
-	line "help your quest."
+	para "I have regretted"
+	line "it ever since."
+	cont "Take this."
 	prompt
 
 _MrFujisHouseMrFujiReceivedPokeFluteText::
@@ -57,10 +57,10 @@ _MrFujisHouseMrFujiReceivedPokeFluteText::
 _MrFujisHouseMrFujiPokeFluteExplanationText::
 	text_start
 
-	para "Upon hearing #"
-	line "FLUTE, sleeping"
-	cont "#MON will"
-	cont "spring awake."
+	para "Its tune cuts"
+	line "through the"
+	cont "signal. Sleeping"
+	cont "#MON wake up."
 
 	para "It works on all"
 	line "sleeping #MON."

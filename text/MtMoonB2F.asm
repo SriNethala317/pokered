@@ -57,9 +57,9 @@ _MtMoonB2FSuperNerdThenThisIsMineText::
 
 _MtMoonB2FRocket1BattleText::
 	text "TEAM ROCKET will"
-	line "find the fossils,"
-	cont "revive and sell"
-	cont "them for cash!"
+	line "find the fossils"
+	cont "and test collars"
+	cont "on old #MON!"
 	done
 
 _MtMoonB2FRocket1EndBattleText::
@@ -102,9 +102,10 @@ _MtMoonB2FRocket3EndBattleText::
 	prompt
 
 _MtMoonB2FRocket3AfterBattleText::
-	text "If you find a"
-	line "fossil, give it"
-	cont "to me and scram!"
+	text "Ancient #MON"
+	line "have ancient fre-"
+	cont "quencies. BOSS"
+	cont "wants them!"
 	done
 
 _MtMoonB2FRocket4BattleText::

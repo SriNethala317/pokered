@@ -12,8 +12,8 @@ _SSAnne2FRivalText::
 	text "<RIVAL>: Bonjour!"
 	line "<PLAYER>!"
 
-	para "Imagine seeing"
-	line "you here!"
+	para "This BAND makes"
+	line "my #MON snap!"
 
 	para "<PLAYER>, were you"
 	line "really invited?"
@@ -34,14 +34,14 @@ _SSAnne2FRivalText::
 _SSAnne2FRivalDefeatedText::
 	text "Humph!"
 
-	para "At least you're"
-	line "raising your"
-	cont "#MON!"
+	para "Fine! I didn't"
+	line "even need the"
+	cont "BAND for that!"
 	prompt
 
 _SSAnne2FRivalVictoryText::
-	text "<PLAYER>! What are"
-	line "you, seasick?"
+	text "<PLAYER>! The"
+	line "BAND never lies!"
 
 	para "You should shape"
 	line "up, pal!"

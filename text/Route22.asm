@@ -12,9 +12,9 @@ _Route22RivalBeforeBattleText1::
 	para "The guard won't"
 	line "let you through!"
 
-	para "By the way, did"
-	line "your #MON"
-	cont "get any stronger?"
+	para "Still trusting"
+	line "your #MON? Ha!"
+	cont "Power beats it!"
 	done
 
 _Route22RivalAfterBattleText1::
@@ -59,10 +59,10 @@ _Route22RivalBeforeBattleText2::
 	line "the BADGEs too?"
 	cont "That's cool!"
 
-	para "Then I'll whip you"
-	line "<PLAYER> as a"
-	cont "warm up for"
-	cont "#MON LEAGUE!"
+	para "My #MON flinch"
+	line "at the BAND now."
+	cont "Doesn't matter!"
+	cont "One more push!"
 
 	para "Come on!"
 	done
@@ -72,12 +72,14 @@ _Route22RivalAfterBattleText2::
 	line "up! I'm ready for"
 	cont "#MON LEAGUE!"
 
-	para "<PLAYER>, you need"
-	line "more practice!"
+	para "Why won't they"
+	line "look at me like"
+	cont "yours look at"
+	cont "you, <PLAYER>?"
 
-	para "But hey, you know"
-	line "that! I'm out of"
-	cont "here. Smell ya!"
+	para "Forget it! I'm"
+	line "out of here."
+	cont "Smell ya!"
 	done
 
 _Route22Rival2DefeatedText::

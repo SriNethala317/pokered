@@ -1,13 +1,15 @@
 _Route12SnorlaxText::
 	text "A sleeping #MON"
 	line "blocks the way!"
+	cont "It twitches..."
 	done
 
 _Route12SnorlaxWokeUpText::
 	text "SNORLAX woke up!"
 
-	para "It attacked in a"
-	line "grumpy rage!"
+	para "The signal has it"
+	line "frantic! It's in"
+	cont "a FRENZY!"
 	done
 
 _Route12SnorlaxCalmedDownText::

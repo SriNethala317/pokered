@@ -31,13 +31,13 @@ _SilphCo11FSilphPresidentMasterBallDescriptionText::
 	line "can't buy that"
 	cont "anywhere!"
 
-	para "It's our secret"
-	line "prototype MASTER"
-	cont "BALL!"
+	para "It was built to"
+	line "hold the first"
+	cont "collared #MON."
 
-	para "It will catch any"
-	line "#MON without"
-	cont "fail!"
+	para "Now it will catch"
+	line "any #MON"
+	cont "without fail!"
 
 	para "You should be"
 	line "quiet about using"
@@ -64,8 +64,8 @@ _SilphCo11FGiovanniText::
 
 	para "The PRESIDENT and"
 	line "I are discussing"
-	cont "a vital business"
-	cont "proposition."
+	cont "a bulk order of"
+	cont "SYNC COLLARS."
 
 	para "Keep your nose"
 	line "out of grown-up"
@@ -88,10 +88,10 @@ _SilphCo11FGiovanniYouRuinedOurPlansText::
 	para "But, TEAM ROCKET"
 	line "will never fall!"
 
-	para "<PLAYER>! Never"
-	line "forget that all"
-	cont "#MON exist"
-	cont "for TEAM ROCKET!"
+	para "One day, every"
+	line "#MON in KANTO"
+	cont "will wear a"
+	cont "ROCKET collar!"
 
 	para "I must go, but I"
 	line "shall return!"

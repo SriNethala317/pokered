@@ -6,9 +6,9 @@ _SaffronGymSabrinaText::
 	line "powers since I"
 	cont "was a child."
 
-	para "I first learned"
-	line "to bend spoons"
-	cont "with my mind."
+	para "Now I hear that"
+	line "BROADCAST day and"
+	cont "night. I hate it."
 
 	para "I dislike fight-"
 	line "ing, but if you"

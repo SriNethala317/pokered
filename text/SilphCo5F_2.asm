@@ -30,10 +30,10 @@ _SilphCo5FPokemonReport1Text::
 	text "It's a #MON"
 	line "REPORT!"
 
-	para "#MON LAB"
-	line "created PORYGON,"
-	cont "the first virtual"
-	cont "reality #MON."
+	para "SYNC COLLAR line:"
+	line "5000 units for"
+	cont "TEAM ROCKET."
+	cont "Wear rate: high."
 	done
 
 _SilphCo5FPokemonReport2Text::
