@@ -24,7 +24,7 @@ _PokemonTower2FRivalVictoryText::
 	cont "winners, pal!"
 
 	para "Toughen up your"
-	line "#MON some more!"
+	line "#MON more!"
 	prompt
 
 _PokemonTower2FRivalHowsYourDexText::

@@ -1144,15 +1144,28 @@ HandlePlayerBlackOut:
 	callfar LosingStillCounts ; a loss brings the team closer all the same
 	ld a, [wCurOpponent]
 	cp OPP_RIVAL1
+	jr z, .rivalBattle
+	cp OPP_RIVAL2
+	jr z, .rivalBattle
+	cp OPP_RIVAL3
 	jr nz, .notRival1Battle
-	hlcoord 0, 0  ; rival 1 battle
+.rivalBattle ; the rival gloats before the player blacks out
+	hlcoord 0, 0
 	lb bc, 8, 21
 	call ClearScreenArea
 	call ScrollTrainerPicAfterBattle
 	ld c, 40
 	call DelayFrames
+	ld hl, wStatusFlags3
+	bit BIT_PRINT_END_BATTLE_TEXT, [hl]
+	res BIT_PRINT_END_BATTLE_TEXT, [hl]
+	jr z, .genericWinText
+	call PrintEndBattleLoseText ; his own line for this battle
+	jr .gloated
+.genericWinText
 	ld hl, Rival1WinText
 	call PrintText
+.gloated
 	ld a, [wCurMap]
 	cp OAKS_LAB
 	ret z            ; starter battle in oak's lab: don't black out

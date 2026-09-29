@@ -354,6 +354,24 @@ PrintEndBattleText::
 	farcall SetEnemyTrainerToStayAndFaceAnyDirection
 	jp WaitForSoundToFinish
 
+; the saved text for a battle the player lost, as is: unlike the win text,
+; it names its speaker itself
+PrintEndBattleLoseText::
+	ldh a, [hLoadedROMBank]
+	push af
+	ld a, [wEndBattleTextRomBank]
+	ldh [hLoadedROMBank], a
+	ld [rROMB], a
+	ld hl, wEndBattleLoseTextPointer
+	ld a, [hli]
+	ld l, [hl]
+	ld h, a
+	call PrintText
+	pop af
+	ldh [hLoadedROMBank], a
+	ld [rROMB], a
+	ret
+
 GetSavedEndBattleTextPointer::
 	ld a, [wBattleResult]
 	and a

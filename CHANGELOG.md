@@ -209,6 +209,15 @@ Integration build sha1 `34dcd2ae05d0e0c55304cb5f9f7ee403961dbde6`.
   signal". The Snorlax are frantic, a Silph report lists the collar order,
   Sabrina hates the broadcast, and the MASTER BALL was a collar's cage.
 - Only the text changed: labels, scripts and entry counts are vanilla's.
+- When the rival beats you, they now say their own line for that battle (the
+  "The BAND did it!" lines) instead of vanilla's generic "Am I great or what?".
+  In vanilla those victory lines were written but never shown.
+- Fixed three lines whose last letters were hidden: under the wait arrow
+  (Tower 2F, Hideout B4F), or past the edge after the rival's name (Cerulean).
+- `test/storyscenes.py` plays every rewritten scene through its real script.
+  It covers each rival battle both won and lost, and the Champion through the
+  Hall of Fame and credits back to the title. `test/storytext.py` prints each
+  changed text box. `test/textlint.py` checks line widths.
   `test/textlint.py` checks that every changed line fits in 18 tiles.
 
 ### Frenzy bosses: the Snorlax on Routes 12 and 16

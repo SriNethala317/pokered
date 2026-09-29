@@ -15,8 +15,8 @@ _CeruleanCityRivalPreBattleText::
 	done
 
 _CeruleanCityRivalDefeatedText::
-	text "Hey! No fair,"
-	line "you don't even"
+	text "No fair!"
+	line "You don't even"
 	cont "need a BAND!"
 	prompt
 

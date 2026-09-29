@@ -17,7 +17,7 @@ _RocketHideoutB4FGiovanniHopeWeMeetAgainText::
 	para "Those crates hold"
 	line "SYNC COLLARS."
 	cont "SILPH makes them."
-	cont "I make them count."
+	cont "I make them work."
 
 	para "I shall step"
 	line "aside this time!"
